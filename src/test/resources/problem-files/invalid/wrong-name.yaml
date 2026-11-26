@@ -1,0 +1,10 @@
+slug: other-name
+title: T
+difficulty: 1
+topics: [caching]
+prompt: x
+key_points:
+  - {id: a, dimension: api, text: a}
+  - {id: b, dimension: api, text: b}
+  - {id: c, dimension: api, text: c}
+  - {id: d, dimension: api, text: d}

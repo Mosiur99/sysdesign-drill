@@ -1,0 +1,19 @@
+slug: cache-design
+title: Design a cache
+difficulty: 2
+topics: [caching, real-time]
+prompt: |
+  Design a cache.
+key_points:
+  - id: eviction
+    dimension: deep_dive
+    text: Picks an eviction policy
+  - id: sizing
+    dimension: estimation
+    text: Sizes memory
+  - id: api
+    dimension: api
+    text: Defines get and put
+  - id: failure
+    dimension: scale_failure
+    text: Handles node loss

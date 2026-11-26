@@ -1,0 +1,31 @@
+slug: news-feed
+title: Design a social news feed
+difficulty: 2
+topics: [caching, storage, messaging]
+prompt: |
+  Users follow other users and see a feed of recent posts from the people they follow,
+  newest first, with infinite scroll. There are 300 million users.
+  Most users follow a few hundred accounts, but some celebrities have 50 million followers.
+  Opening the feed must feel instant.
+key_points:
+  - id: fanout-choice
+    dimension: deep_dive
+    text: Compares fan-out on write (precomputed feeds) with fan-out on read, and uses a hybrid where celebrity posts are merged at read time
+  - id: feed-cache
+    dimension: architecture
+    text: Keeps each active user's feed as a list of post ids in a cache, with post bodies fetched and cached separately
+  - id: pagination
+    dimension: api
+    text: Uses cursor-based pagination (last seen post id or timestamp) rather than offsets, since new posts shift offsets
+  - id: inactive-users
+    dimension: scale_failure
+    text: Skips precomputing feeds for inactive users and rebuilds on their next visit to save work and memory
+  - id: write-estimate
+    dimension: estimation
+    text: Estimates fan-out writes per second from posts per day times average followers and shows why celebrities break pure push
+  - id: graph-store
+    dimension: data_model
+    text: Stores the follow graph in both directions (followers and following) for fast lookups
+  - id: async-fanout
+    dimension: architecture
+    text: Does fan-out asynchronously through a queue so the post request returns quickly

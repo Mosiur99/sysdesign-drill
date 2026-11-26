@@ -1,0 +1,31 @@
+slug: notification-service
+title: Design a notification service
+difficulty: 2
+topics: [messaging, scheduling]
+prompt: |
+  Internal teams need to send notifications to users by push, email and SMS.
+  Some are triggered by events (order shipped), some are scheduled (weekly digest),
+  and marketing sends campaigns to millions of users at once.
+  Users can opt out per channel and per category. Design the service.
+key_points:
+  - id: queue-per-channel
+    dimension: architecture
+    text: Accepts requests into a queue and uses separate workers per channel so a slow SMS provider cannot block push or email
+  - id: preferences
+    dimension: data_model
+    text: Stores user preferences and device tokens, and checks opt-outs before sending rather than in each calling team
+  - id: idempotency
+    dimension: deep_dive
+    text: Uses an idempotency key per notification so retries and duplicate events do not send the same message twice
+  - id: provider-retries
+    dimension: scale_failure
+    text: Retries provider failures with backoff, uses a dead-letter queue, and can fail over to a second provider
+  - id: campaign-throttle
+    dimension: scale_failure
+    text: Spreads large campaigns over time and respects provider rate limits instead of enqueueing millions of sends at once
+  - id: priority
+    dimension: tradeoffs
+    text: Separates transactional from marketing traffic (priority queues) so a campaign cannot delay a password reset
+  - id: send-api
+    dimension: api
+    text: Defines a send API with recipient, template, channel hints and idempotency key, returning an id to track delivery status

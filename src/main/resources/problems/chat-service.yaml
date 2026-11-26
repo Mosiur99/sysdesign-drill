@@ -1,0 +1,31 @@
+slug: chat-service
+title: Design a one-to-one and group chat service
+difficulty: 2
+topics: [real-time, messaging, storage]
+prompt: |
+  Build the backend for a mobile chat app with 50 million daily active users.
+  Users chat one-to-one and in groups of up to 500 people.
+  Messages must arrive in near real time, keep their order within a conversation,
+  and be readable later on any of the user's devices. Show online status and read receipts.
+key_points:
+  - id: persistent-connections
+    dimension: architecture
+    text: Uses long-lived connections (WebSocket) to gateway servers plus a session registry mapping user to gateway
+  - id: message-store
+    dimension: data_model
+    text: Stores messages partitioned by conversation id and ordered by a per-conversation sequence or time-based id, suited to a wide-column store
+  - id: ordering
+    dimension: deep_dive
+    text: Explains how order is kept within a conversation (single sequencer per conversation or server-assigned monotonic ids), not by client clocks
+  - id: offline-delivery
+    dimension: deep_dive
+    text: Delivers to offline users by syncing from the last seen sequence number when they reconnect, with push notification as a wake-up
+  - id: group-fanout
+    dimension: scale_failure
+    text: Handles group fan-out (write once, deliver to online members via their gateways) and the cost of large groups
+  - id: connection-estimate
+    dimension: estimation
+    text: Estimates concurrent connections and gateway count from DAU, and message volume and storage per day
+  - id: presence-cost
+    dimension: tradeoffs
+    text: Treats presence as best-effort with heartbeats and timeouts, because exact presence for big friend lists is expensive

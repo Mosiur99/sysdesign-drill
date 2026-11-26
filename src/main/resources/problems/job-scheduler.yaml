@@ -1,0 +1,28 @@
+slug: job-scheduler
+title: Design a distributed job scheduler
+difficulty: 2
+topics: [scheduling, consistency]
+prompt: |
+  Teams register jobs that must run at a set time or on a cron schedule, such as
+  "generate invoices at 02:00 every day" or "send this reminder in 3 hours".
+  There are 10 million scheduled jobs; at peak 20,000 must start in the same minute.
+  A job must not be skipped, and running it twice should be rare and safe.
+key_points:
+  - id: due-index
+    dimension: data_model
+    text: Stores jobs with a next_run_at column indexed (or time-bucketed) so finding due jobs is cheap
+  - id: claiming
+    dimension: deep_dive
+    text: Lets workers claim due jobs safely (SELECT ... FOR UPDATE SKIP LOCKED, leases with expiry, or partition ownership) so two workers do not run the same job
+  - id: at-least-once
+    dimension: tradeoffs
+    text: States that delivery is at-least-once and requires jobs to be idempotent, since exactly-once execution is not achievable across failures
+  - id: lease-recovery
+    dimension: scale_failure
+    text: Recovers jobs from crashed workers with lease timeouts and heartbeats, plus retries with backoff and a failed state
+  - id: separate-execution
+    dimension: architecture
+    text: Separates the scheduler that finds due jobs from the executors that run them, connected by a queue
+  - id: peak-estimate
+    dimension: estimation
+    text: Sizes for the peak minute (20,000 starts, about 330 per second) rather than the daily average

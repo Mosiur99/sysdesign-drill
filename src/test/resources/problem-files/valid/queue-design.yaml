@@ -1,0 +1,10 @@
+slug: queue-design
+title: Design a queue
+difficulty: 1
+topics: [messaging]
+prompt: Design a queue.
+key_points:
+  - {id: ordering, dimension: deep_dive, text: Keeps order per partition}
+  - {id: retention, dimension: data_model, text: Retains messages for a week}
+  - {id: consumers, dimension: architecture, text: Uses consumer groups}
+  - {id: tradeoff, dimension: tradeoffs, text: At-least-once delivery}

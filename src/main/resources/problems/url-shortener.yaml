@@ -1,0 +1,31 @@
+slug: url-shortener
+title: Design a URL shortener
+difficulty: 1
+topics: [storage, caching, id-generation]
+prompt: |
+  Users paste a long URL and get back a short link such as sho.rt/x7Kp2a.
+  Opening the short link redirects to the original URL.
+  Expect 100 million new links a month and about 100 redirects for every link created.
+  Links can have an optional expiry date. Owners can see a click count per link.
+key_points:
+  - id: read-heavy
+    dimension: requirements
+    text: Calls out the 100:1 read/write ratio and that redirect latency is the main non-functional requirement
+  - id: storage-size
+    dimension: estimation
+    text: Estimates storage over several years (about 6 billion links at a few hundred bytes each, so low terabytes) and redirect QPS in the tens of thousands at peak
+  - id: code-generation
+    dimension: deep_dive
+    text: Generates collision-free codes, for example a counter or pre-allocated ID ranges encoded in base62, rather than random codes with a retry loop that slows as the table fills
+  - id: kv-store
+    dimension: data_model
+    text: Stores code -> long URL in a key-value or partitioned store keyed by code, since every redirect is a single-key lookup
+  - id: redirect-cache
+    dimension: scale_failure
+    text: Caches hot codes in front of the store and explains what happens on a cache miss or a cache node failure
+  - id: async-clicks
+    dimension: architecture
+    text: Counts clicks asynchronously (log or queue, then aggregate) instead of writing to the database on the redirect path
+  - id: redirect-status
+    dimension: tradeoffs
+    text: Discusses 301 vs 302, where a 301 is cached by browsers and hides later clicks from the count

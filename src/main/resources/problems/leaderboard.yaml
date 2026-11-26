@@ -1,0 +1,27 @@
+slug: leaderboard
+title: Design a real-time game leaderboard
+difficulty: 1
+topics: [real-time, caching, storage]
+prompt: |
+  A mobile game has 25 million monthly players. Each finished match updates the player's score.
+  Players want to see the global top 100 and their own rank ("you are #1,204,733"),
+  updated within seconds. The leaderboard resets every month.
+key_points:
+  - id: sorted-set
+    dimension: architecture
+    text: Uses a sorted set (for example Redis ZSET) with score updates and rank lookups in O(log n)
+  - id: durable-scores
+    dimension: scale_failure
+    text: Keeps the source of truth for scores in a durable database and can rebuild the sorted set if the cache is lost
+  - id: monthly-reset
+    dimension: data_model
+    text: Uses one key per month (leaderboard:2026-11) so reset is a new key, with old months archived
+  - id: approximate-rank
+    dimension: tradeoffs
+    text: Considers approximate ranks for players far down the list (score buckets) if one sorted set becomes too large or hot
+  - id: anti-cheat
+    dimension: requirements
+    text: Accepts scores only from the game server, not directly from clients
+  - id: memory-estimate
+    dimension: estimation
+    text: Estimates memory for 25 million entries (tens of bytes each, so low gigabytes) to show one node can hold it

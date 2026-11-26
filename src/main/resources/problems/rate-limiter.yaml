@@ -1,0 +1,31 @@
+slug: rate-limiter
+title: Design a distributed rate limiter
+difficulty: 1
+topics: [rate-limiting, consistency, caching]
+prompt: |
+  Your public API runs on 50 stateless gateway nodes behind a load balancer.
+  Each API key may make 1,000 requests a minute; some paid plans allow more.
+  Requests over the limit must be rejected quickly with a clear response.
+  Design the rate limiting component the gateways use.
+key_points:
+  - id: algorithm-choice
+    dimension: deep_dive
+    text: Compares algorithms (fixed window, sliding window log, sliding window counter, token bucket) and picks one with a reason such as burst handling or memory per key
+  - id: shared-counter
+    dimension: architecture
+    text: Keeps counters in a shared fast store such as Redis rather than per node, because 50 nodes with local counters would allow 50x the limit
+  - id: atomic-update
+    dimension: deep_dive
+    text: Makes check-and-increment atomic (Lua script, INCR with expiry) so concurrent requests cannot both pass the last slot
+  - id: fail-open
+    dimension: scale_failure
+    text: Decides what happens when the limiter store is down (fail open vs fail closed) and justifies it for this API
+  - id: response-headers
+    dimension: api
+    text: Returns 429 with Retry-After and remaining-quota headers so clients can back off
+  - id: latency-budget
+    dimension: requirements
+    text: Treats added latency as a requirement (a few milliseconds) and the limit as approximate rather than exact
+  - id: local-batching
+    dimension: tradeoffs
+    text: Considers local pre-aggregation or slightly stale counters to cut store round trips, accepting small overshoot

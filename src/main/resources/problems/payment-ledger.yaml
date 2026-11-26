@@ -1,0 +1,31 @@
+slug: payment-ledger
+title: Design a payment ledger for a wallet app
+difficulty: 3
+topics: [payments, consistency, storage]
+prompt: |
+  A wallet app lets users top up from a card, send money to each other, and withdraw to a bank.
+  Every movement of money must be recorded and balances must never be wrong.
+  The external card and bank providers are slow and sometimes time out without telling you
+  whether the payment happened. Design the ledger and the payment flow around it.
+key_points:
+  - id: double-entry
+    dimension: data_model
+    text: Uses double-entry bookkeeping with immutable entries where each transaction's debits equal its credits, and balances derived from entries
+  - id: idempotency-keys
+    dimension: api
+    text: Requires an idempotency key on every money-moving request and returns the original result on retry
+  - id: unknown-outcome
+    dimension: deep_dive
+    text: Handles provider timeouts with a pending state, status polling or webhooks, and reconciliation instead of assuming success or failure
+  - id: no-overdraft
+    dimension: deep_dive
+    text: Prevents concurrent transfers from overdrawing an account (row lock or conditional update on the balance in the same transaction)
+  - id: reconciliation
+    dimension: scale_failure
+    text: Runs daily reconciliation against provider settlement reports and has a process for mismatches
+  - id: consistency-choice
+    dimension: tradeoffs
+    text: Chooses strong consistency in a relational database for the ledger and explains why availability is traded away here
+  - id: outbox
+    dimension: architecture
+    text: Publishes ledger events with a transactional outbox so downstream services never see events for rolled-back transactions

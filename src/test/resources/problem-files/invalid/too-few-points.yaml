@@ -1,0 +1,7 @@
+slug: too-few-points
+title: T
+difficulty: 1
+topics: [caching]
+prompt: x
+key_points:
+  - {id: a, dimension: api, text: a}

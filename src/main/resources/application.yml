@@ -14,6 +14,8 @@ spring:
 
 drill:
   zone: ${DRILL_ZONE:Asia/Dhaka}
+  problems:
+    location: classpath:problems/*.yaml
 
 management:
   endpoints:

@@ -1,0 +1,31 @@
+slug: ticket-booking
+title: Design a concert ticket booking system
+difficulty: 3
+topics: [consistency, payments, caching]
+prompt: |
+  A ticketing site sells reserved seats for big concerts. When a popular show opens,
+  500,000 people try to buy 50,000 seats in the first minutes.
+  A user picks seats, has 10 minutes to pay, and the seats are held for them meanwhile.
+  No seat may ever be sold twice.
+key_points:
+  - id: seat-hold
+    dimension: deep_dive
+    text: Holds seats with an expiring reservation (status plus hold_until) and releases expired holds automatically
+  - id: no-double-sell
+    dimension: deep_dive
+    text: Prevents double booking with a conditional update or unique constraint on the seat, not a read-then-write check
+  - id: waiting-room
+    dimension: architecture
+    text: Puts a virtual waiting room or queue in front of the purchase flow to admit users at a rate the system can handle
+  - id: payment-coupling
+    dimension: scale_failure
+    text: Handles payment success after the hold expired, and payment failures, with clear state transitions and refunds
+  - id: read-cache
+    dimension: scale_failure
+    text: Serves the seat map from a cache with slightly stale availability, while the final reservation checks the database
+  - id: hot-event
+    dimension: tradeoffs
+    text: Recognises one event as a hot partition and discusses sharding by section or serialising writes per event
+  - id: traffic-estimate
+    dimension: estimation
+    text: Estimates the burst (500,000 users in minutes) and the seat-reservation write rate the database must sustain

@@ -1,0 +1,28 @@
+slug: search-autocomplete
+title: Design search autocomplete
+difficulty: 2
+topics: [search, caching]
+prompt: |
+  As a user types in the search box of a large shopping site, show the top 10 suggestions
+  for the typed prefix within 100 ms. Suggestions come from popular past searches.
+  There are 20 million distinct queries and 50,000 keystroke requests per second at peak.
+  New trending queries should appear within an hour.
+key_points:
+  - id: prefix-structure
+    dimension: data_model
+    text: Uses a trie or a prefix -> top-k map where each node stores precomputed top suggestions, so a lookup does not scan the subtree
+  - id: offline-build
+    dimension: architecture
+    text: Builds the structure offline from search logs (batch aggregation) and swaps it in, keeping the read path read-only
+  - id: client-tricks
+    dimension: api
+    text: Debounces keystrokes on the client and caches prefix responses in the browser and CDN
+  - id: sharding
+    dimension: scale_failure
+    text: Replicates or shards the index by prefix range and handles uneven load on popular prefixes
+  - id: freshness
+    dimension: tradeoffs
+    text: Trades freshness for simplicity with hourly rebuilds, or adds a small real-time layer for trending queries
+  - id: latency-budget
+    dimension: requirements
+    text: Treats the 100 ms budget as end to end and serves suggestions from memory
