@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: sysdesign-drill
+  datasource:
+    url: ${DRILL_DB_URL:jdbc:postgresql://localhost:5434/drill}
+    username: ${DRILL_DB_USER:drill}
+    password: ${DRILL_DB_PASSWORD:drill}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    locations: classpath:db/migration
+
+drill:
+  zone: ${DRILL_ZONE:Asia/Dhaka}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
