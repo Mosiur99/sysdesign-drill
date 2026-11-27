@@ -18,6 +18,14 @@ drill:
     location: classpath:problems/*.yaml
   pick:
     cron: ${DRILL_PICK_CRON:0 0 8 * * *}
+  llm:
+    base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1}
+    api-key: ${GROQ_API_KEY:}
+    model: ${GROQ_MODEL:openai/gpt-oss-120b}
+    connect-timeout: 5s
+    read-timeout: 90s
+    max-retry-after: 30s
+    max-attempts: 3
   auth:
     username: ${DRILL_USER:}
     password-hash: ${DRILL_PASSWORD_HASH:}
@@ -29,6 +37,10 @@ server:
         http-only: true
         same-site: lax
         secure: ${DRILL_SECURE_COOKIE:false}
+
+logging:
+  level:
+    org.springframework.web.client: WARN
 
 management:
   endpoints:
