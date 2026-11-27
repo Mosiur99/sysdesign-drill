@@ -46,10 +46,4 @@ public class AnswerController {
         answers.submit(id, fields);
         return ResponseEntity.status(303).location(URI.create("/drills/" + id + "/result")).build();
     }
-
-    @GetMapping("/result")
-    public String result(@PathVariable long id, Model model) {
-        model.addAttribute("submission", answers.submission(id));
-        return "result";
-    }
 }

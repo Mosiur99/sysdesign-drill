@@ -9,9 +9,9 @@ import java.util.Map;
 
 import dev.mosiur.drill.answer.domain.Answer;
 import dev.mosiur.drill.answer.model.EditorSection;
+import dev.mosiur.drill.answer.model.AnswerSubmitted;
 import dev.mosiur.drill.answer.model.EditorView;
 import dev.mosiur.drill.answer.model.SectionGuide;
-import dev.mosiur.drill.answer.model.SubmissionView;
 import dev.mosiur.drill.answer.repository.AnswerRepository;
 import dev.mosiur.drill.answer.service.AnswerLockedException;
 import dev.mosiur.drill.answer.service.AnswerService;
@@ -19,6 +19,7 @@ import dev.mosiur.drill.answer.service.AnswerTooLongException;
 import dev.mosiur.drill.answer.service.DrillNotFoundException;
 import dev.mosiur.drill.drill.domain.Drill;
 import dev.mosiur.drill.drill.repository.DrillRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,11 +31,14 @@ public class AnswerServiceImpl implements AnswerService {
     private final DrillRepository drills;
     private final AnswerRepository answers;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
-    public AnswerServiceImpl(DrillRepository drills, AnswerRepository answers, Clock clock) {
+    public AnswerServiceImpl(DrillRepository drills, AnswerRepository answers, Clock clock,
+                             ApplicationEventPublisher events) {
         this.drills = drills;
         this.answers = answers;
         this.clock = clock;
+        this.events = events;
     }
 
     @Override
@@ -70,15 +74,7 @@ public class AnswerServiceImpl implements AnswerService {
         drill.submit(now);
         Answer answer = write(drillId, sections(fields));
         answer.finish(drill.getStartedAt(), now);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public SubmissionView submission(long drillId) {
-        Drill drill = find(drillId);
-        Answer answer = mainAnswer(drillId);
-        return new SubmissionView(drillId, drill.getProblem().getTitle(), drill.getStatus(),
-                answer == null ? 0 : answer.getWordCount(), answer == null ? null : answer.getSecondsSpent());
+        events.publishEvent(new AnswerSubmitted(drillId));
     }
 
     private Drill find(long drillId) {

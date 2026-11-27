@@ -98,7 +98,7 @@ class EditorUiIT {
 
         page.waitForURL(Pattern.compile(".*/drills/\\d+/result$"));
         assertThat(page.locator("h1")).isVisible();
-        assertThat(page.getByText("Your answer is submitted")).isVisible();
+        assertThat(page.locator("#grading-title, #failed-title")).isVisible();
         Assertions.assertThat(jdbc.queryForObject("select status from drill", String.class)).isEqualTo("GRADING");
         Assertions.assertThat(consoleErrors).isEmpty();
     }

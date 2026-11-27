@@ -83,7 +83,7 @@ class AnswerFlowIT {
         assertThat(status(drill.id())).isEqualTo("GRADING");
         assertThat(jdbc.queryForObject("select draft from answer where drill_id = ?", Boolean.class, drill.id()))
                 .isFalse();
-        assertThat(session.page(editorUri + "/result")).contains("Your answer is submitted").contains("4 words");
+        assertThat(session.page(editorUri + "/result")).contains("4 words");
         assertThat(session.page("/")).contains("See result");
 
         session.post(editorUri + "/submit", form(Map.of())).expectStatus().isEqualTo(409);

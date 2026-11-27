@@ -75,6 +75,10 @@ public class Answer {
         return sections.getOrDefault(code, "");
     }
 
+    public Long getId() {
+        return id;
+    }
+
     public long getDrillId() {
         return drillId;
     }

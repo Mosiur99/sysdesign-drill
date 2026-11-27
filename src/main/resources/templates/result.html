@@ -1,27 +1,90 @@
 <!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head(${submission.title})}"></head>
+<head th:replace="~{fragments/layout :: head(${result.title})}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header('today')}"></header>
-<main class="page">
-    <section class="today" th:switch="${submission.status.name()}">
-        <th:block th:case="'GRADING'">
+<main class="page page-result">
+    <section class="result-head">
+        <div class="stack-tight">
             <p class="meta">
-                <span th:text="${submission.wordCount} + ' words'">812 words</span><th:block
-                    th:if="${submission.minutesSpent() != null}"> · <span
-                    th:text="${submission.minutesSpent()} + ' min'">47 min</span></th:block>
+                <span th:text="${#temporals.format(result.day, 'EEE d MMM', #locale.ENGLISH)}">Fri 27 Nov</span><th:block
+                    th:if="${result.minutes != null}"> · <span th:text="${result.minutes} + ' min'">41 min</span></th:block>
+                · <span th:text="${result.wordCount} + ' words'">812 words</span>
+                · <span th:text="${result.retry} ? 'retry' : 'first attempt'">first attempt</span>
             </p>
-            <h1 th:text="${submission.title}">Design a notification service</h1>
-            <p class="prompt">Your answer is submitted and saved. It is waiting to be graded, and the
-                scores will appear on this page.</p>
-            <div class="skeleton" aria-hidden="true"><span></span><span></span><span></span></div>
-        </th:block>
-        <th:block th:case="*">
-            <h1 th:text="${submission.title}">Design a notification service</h1>
-            <p class="prompt">This answer is not submitted yet.</p>
-            <a class="button" th:href="@{/drills/{id}(id=${submission.drillId})}">Continue answer</a>
-        </th:block>
+            <h1 th:text="${result.title}">Design a notification service</h1>
+        </div>
+        <div th:if="${result.graded}" class="score-line">
+            <p class="score"><span class="score-value" th:text="${result.overall}">68</span><span
+                    class="score-max"> / 100</span></p>
+            <p class="summary" th:if="${!#strings.isEmpty(result.summary)}" th:text="${result.summary}">Summary</p>
+        </div>
     </section>
+
+    <section th:if="${result.grading}" class="status-panel" aria-labelledby="grading-title"
+             th:attr="hx-get=@{/drills/{id}/result/progress(id=${result.drillId})}" hx-trigger="every 2s"
+             hx-swap="none">
+        <h2 id="grading-title">Grading your answer</h2>
+        <p>This usually takes 20 to 40 seconds. The page updates by itself, and you can leave it: the result
+            waits on Today.</p>
+        <div class="skeleton" aria-hidden="true"><span></span><span></span><span></span></div>
+        <noscript><p class="meta">Reload the page to check.</p></noscript>
+    </section>
+
+    <section th:if="${result.failed}" class="status-panel" aria-labelledby="failed-title">
+        <h2 id="failed-title">Grading didn't finish</h2>
+        <p th:text="${result.failure}">The grading service hit its rate limit.</p>
+        <form th:action="@{/drills/{id}/regrade(id=${result.drillId})}" method="post">
+            <button type="submit" class="button">Grade again</button>
+        </form>
+    </section>
+
+    <th:block th:if="${result.graded}">
+        <section class="improve" aria-labelledby="improve-title">
+            <h2 id="improve-title">Improve these first</h2>
+            <ol>
+                <li th:each="item : ${result.improvements}" th:text="${item}">Add a data model.</li>
+            </ol>
+        </section>
+
+        <section class="dimensions" aria-labelledby="dimensions-title">
+            <h2 id="dimensions-title">Score by section</h2>
+            <div th:each="dimension : ${result.dimensions}" class="dimension">
+                <div class="dimension-head">
+                    <span class="dimension-name" th:text="${dimension.title}">Requirements</span>
+                    <span class="meter" role="img"
+                          th:attr="aria-label=${dimension.title} + ': ' + ${dimension.score} + ' of 4'">
+                        <span th:each="on : ${dimension.segments()}" th:classappend="${on} ? 'on'"></span>
+                    </span>
+                    <span class="dimension-score" th:text="${dimension.score} + '/4'">3/4</span>
+                </div>
+                <p th:if="${!#strings.isEmpty(dimension.evidence)}" class="quote"
+                   th:text="'“' + ${dimension.evidence} + '”'">“quote”</p>
+                <p th:if="${!dimension.verified}" class="flag"
+                   th:text="${#strings.isEmpty(dimension.evidence)} ? 'The grader gave this score without quoting your answer, so it may be off.' : 'This quote was not found in your answer, so the score may be off.'">
+                    This quote was not found in your answer, so the score may be off.</p>
+                <p th:if="${!#lists.isEmpty(dimension.missing)}" class="missing"
+                   th:text="'Missing: ' + ${#strings.listJoin(dimension.missing, '; ')}">Missing: x</p>
+            </div>
+        </section>
+
+        <section class="checklist" aria-labelledby="checklist-title">
+            <h2 id="checklist-title">Checklist <span class="meta"
+                    th:text="${result.coveredCount()} + ' of ' + ${#lists.size(result.checklist)} + ' covered'">4 of 7 covered</span></h2>
+            <ul>
+                <li th:each="item : ${result.checklist}">
+                    <span class="check-state" th:classappend="${item.covered} ? 'covered' : 'missed'"
+                          th:text="${item.covered} ? 'Covered' : 'Missed'">Covered</span>
+                    <span th:text="${item.text}">Point</span>
+                </li>
+            </ul>
+        </section>
+
+        <form class="regrade" th:action="@{/drills/{id}/regrade(id=${result.drillId})}" method="post">
+            <button type="submit" class="link-button">Grade this answer again</button>
+        </form>
+    </th:block>
 </main>
+<script th:if="${result.grading}" th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
 </body>
 </html>

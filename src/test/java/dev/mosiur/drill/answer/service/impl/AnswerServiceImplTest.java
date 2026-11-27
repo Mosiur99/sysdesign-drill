@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import dev.mosiur.drill.answer.domain.Answer;
+import dev.mosiur.drill.answer.model.AnswerSubmitted;
 import dev.mosiur.drill.answer.model.EditorView;
 import dev.mosiur.drill.answer.repository.AnswerRepository;
 import dev.mosiur.drill.answer.service.AnswerLockedException;
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class AnswerServiceImplTest {
@@ -42,12 +44,15 @@ class AnswerServiceImplTest {
     @Mock
     private AnswerRepository answers;
 
+    @Mock
+    private ApplicationEventPublisher events;
+
     private AnswerServiceImpl service;
     private Drill drill;
 
     @BeforeEach
     void setUp() {
-        service = new AnswerServiceImpl(drills, answers, Clock.fixed(NOW, ZoneOffset.UTC));
+        service = new AnswerServiceImpl(drills, answers, Clock.fixed(NOW, ZoneOffset.UTC), events);
         Problem problem = new Problem("url-shortener");
         problem.update("Design a URL shortener", "Shorten links.", 1, java.util.Set.of());
         drill = new Drill(problem, LocalDate.of(2026, 11, 27), DrillKind.NEW);
@@ -103,6 +108,7 @@ class AnswerServiceImplTest {
         service.submit(1L, Map.of("requirements", "shorten long links"));
 
         assertThat(drill.getStatus()).isEqualTo(DrillStatus.GRADING);
+        verify(events).publishEvent(new AnswerSubmitted(1L));
     }
 
     @Test

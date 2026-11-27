@@ -18,6 +18,8 @@ drill:
     location: classpath:problems/*.yaml
   pick:
     cron: ${DRILL_PICK_CRON:0 0 8 * * *}
+  grading:
+    sweep-interval: PT1M
   llm:
     base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1}
     api-key: ${GROQ_API_KEY:}

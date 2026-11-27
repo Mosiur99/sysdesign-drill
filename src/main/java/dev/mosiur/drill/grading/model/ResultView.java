@@ -1,0 +1,43 @@
+package dev.mosiur.drill.grading.model;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.IntStream;
+
+public record ResultView(long drillId, String title, LocalDate day, boolean retry, Integer minutes, int wordCount,
+                         State state, Integer overall, String summary, List<String> improvements,
+                         List<DimensionView> dimensions, List<ChecklistItem> checklist, String failure) {
+
+    public enum State {
+        NOT_SUBMITTED,
+        GRADING,
+        FAILED,
+        GRADED
+    }
+
+    public record DimensionView(String title, int score, String evidence, boolean verified, List<String> missing) {
+
+        public List<Boolean> segments() {
+            return IntStream.rangeClosed(1, Rubric.MAX_SCORE).mapToObj(segment -> segment <= score).toList();
+        }
+    }
+
+    public record ChecklistItem(String text, boolean covered) {
+    }
+
+    public long coveredCount() {
+        return checklist.stream().filter(ChecklistItem::covered).count();
+    }
+
+    public boolean isGrading() {
+        return state == State.GRADING;
+    }
+
+    public boolean isFailed() {
+        return state == State.FAILED;
+    }
+
+    public boolean isGraded() {
+        return state == State.GRADED;
+    }
+}

@@ -75,6 +75,20 @@ public class Drill {
         submittedAt = now;
     }
 
+    public void markGraded() {
+        if (status != DrillStatus.GRADING) {
+            throw new IllegalStateException("drill " + id + " is " + status + ", not GRADING");
+        }
+        status = DrillStatus.GRADED;
+    }
+
+    public void regrade() {
+        if (status != DrillStatus.GRADING && status != DrillStatus.GRADED) {
+            throw new IllegalStateException("drill " + id + " is " + status + " and cannot be graded again");
+        }
+        status = DrillStatus.GRADING;
+    }
+
     public boolean isEditable() {
         return status == DrillStatus.ASSIGNED || status == DrillStatus.IN_PROGRESS;
     }

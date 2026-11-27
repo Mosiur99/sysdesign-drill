@@ -1,6 +1,8 @@
 package dev.mosiur.drill.drill.repository;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import dev.mosiur.drill.drill.domain.Drill;
@@ -18,6 +20,13 @@ public interface DrillRepository extends JpaRepository<Drill, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select d from Drill d where d.id = :id")
     Optional<Drill> findByIdForUpdate(@Param("id") long id);
+
+    @Query("""
+            select d.id from Drill d
+            where d.status = dev.mosiur.drill.drill.domain.DrillStatus.GRADING and d.submittedAt < :before
+              and not exists (select 1 from Answer a, Grade g where a.drillId = d.id and g.answerId = a.id)
+            """)
+    List<Long> findUngradedSubmittedBefore(@Param("before") Instant before);
 
     @Modifying
     @Query(value = """
