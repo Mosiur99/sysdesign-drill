@@ -28,6 +28,14 @@ public interface DrillRepository extends JpaRepository<Drill, Long> {
             """)
     List<Long> findUngradedSubmittedBefore(@Param("before") Instant before);
 
+    @Query("""
+            select d.id from Drill d, Answer a
+            where a.drillId = d.id and a.round = 2 and a.updatedAt < :before
+              and d.status = dev.mosiur.drill.drill.domain.DrillStatus.FOLLOW_UP
+              and not exists (select 1 from Grade g where g.answerId = a.id)
+            """)
+    List<Long> findUngradedFollowUpsBefore(@Param("before") Instant before);
+
     @Modifying
     @Query(value = """
             insert into drill (problem_id, scheduled_for, kind, status)

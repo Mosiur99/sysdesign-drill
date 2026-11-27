@@ -4,6 +4,10 @@
 <body>
 <header th:replace="~{fragments/layout :: header('today')}"></header>
 <main class="page page-result">
+    <div th:if="${result.pending}" hidden data-poll
+         th:attr="hx-get=@{/drills/{id}/result/progress(id=${result.drillId})}" hx-trigger="every 2s"
+         hx-swap="none"></div>
+
     <section class="result-head">
         <div class="stack-tight">
             <p class="meta">
@@ -14,16 +18,19 @@
             </p>
             <h1 th:text="${result.title}">Design a notification service</h1>
         </div>
-        <div th:if="${result.graded}" class="score-line">
-            <p class="score"><span class="score-value" th:text="${result.overall}">68</span><span
+        <div th:if="${result.hasGrade()}" class="score-line">
+            <p class="score"><span class="score-value" th:text="${result.score.total}">68</span><span
                     class="score-max"> / 100</span></p>
-            <p class="summary" th:if="${!#strings.isEmpty(result.summary)}" th:text="${result.summary}">Summary</p>
+            <div class="summary">
+                <p th:if="${!#strings.isEmpty(result.summary)}" th:text="${result.summary}">Summary</p>
+                <p th:if="${result.score.bonus != null}" class="meta score-breakdown"
+                   th:text="${result.score.main} + ' for the answer + ' + ${result.score.bonus} + ' from follow-ups'">
+                    62 for the answer + 6 from follow-ups</p>
+            </div>
         </div>
     </section>
 
-    <section th:if="${result.grading}" class="status-panel" aria-labelledby="grading-title"
-             th:attr="hx-get=@{/drills/{id}/result/progress(id=${result.drillId})}" hx-trigger="every 2s"
-             hx-swap="none">
+    <section th:if="${result.grading}" class="status-panel" aria-labelledby="grading-title">
         <h2 id="grading-title">Grading your answer</h2>
         <p>This usually takes 20 to 40 seconds. The page updates by itself, and you can leave it: the result
             waits on Today.</p>
@@ -39,7 +46,7 @@
         </form>
     </section>
 
-    <th:block th:if="${result.graded}">
+    <th:block th:if="${result.hasGrade()}">
         <section class="improve" aria-labelledby="improve-title">
             <h2 id="improve-title">Improve these first</h2>
             <ol>
@@ -80,11 +87,79 @@
             </ul>
         </section>
 
-        <form class="regrade" th:action="@{/drills/{id}/regrade(id=${result.drillId})}" method="post">
+        <section th:if="${!#lists.isEmpty(result.followUps)}" id="follow-up" class="follow-up"
+                 aria-labelledby="follow-up-title">
+            <div class="stack-tight">
+                <h2 id="follow-up-title">Follow-up questions</h2>
+                <p th:if="${result.canAnswerFollowUps()}" class="meta">An interviewer would ask these next. Each
+                    answer can add up to 5 points, in proportion to how much it closes the gap in its section.</p>
+                <p th:if="${result.done and result.score.followUpsSkipped}" class="meta">You skipped the follow-ups.</p>
+            </div>
+
+            <form th:if="${result.canAnswerFollowUps()}" class="follow-up-form" method="post"
+                  th:action="@{/drills/{id}/follow-up(id=${result.drillId})}">
+                <div th:each="followUp : ${result.followUps}" class="field">
+                    <label th:for="${followUp.field()}" th:text="${followUp.number} + '. ' + ${followUp.question}">
+                        1. Question</label>
+                    <textarea th:id="${followUp.field()}" th:name="${followUp.field()}" rows="5" maxlength="10000"></textarea>
+                </div>
+                <div class="confirm-actions">
+                    <button type="submit" class="button">Submit follow-up</button>
+                    <button type="submit" class="button-secondary" formnovalidate
+                            th:formaction="@{/drills/{id}/finish(id=${result.drillId})}">Skip and finish</button>
+                </div>
+            </form>
+
+            <th:block th:unless="${result.canAnswerFollowUps()}">
+                <div th:each="followUp : ${result.followUps}" class="follow-up-item">
+                    <p class="follow-up-question" th:text="${followUp.number} + '. ' + ${followUp.question}">Question</p>
+                    <p th:if="${!#strings.isEmpty(followUp.answer)}" class="follow-up-answer"
+                       th:text="${followUp.answer}">Your answer</p>
+                    <th:block th:if="${followUp.graded}">
+                        <div class="dimension-head">
+                            <span class="dimension-name"
+                                  th:text="${followUp.sectionTitle != null} ? ${followUp.sectionTitle} : 'Follow-up'">Deep dive</span>
+                            <span class="meter" role="img"
+                                  th:attr="aria-label='Follow-up ' + ${followUp.number} + ': ' + ${followUp.score} + ' of 4'">
+                                <span th:each="on : ${followUp.segments()}" th:classappend="${on} ? 'on'"></span>
+                            </span>
+                            <span class="dimension-score" th:text="${followUp.score} + '/4'">3/4</span>
+                        </div>
+                        <p th:if="${!#strings.isEmpty(followUp.evidence)}" class="quote"
+                           th:text="'“' + ${followUp.evidence} + '”'">“quote”</p>
+                        <p th:if="${!followUp.verified}" class="flag">This quote was not found in your answer, so
+                            the score may be off.</p>
+                        <p th:if="${!#strings.isEmpty(followUp.feedback)}" class="missing" th:text="${followUp.feedback}">
+                            Feedback</p>
+                    </th:block>
+                </div>
+
+                <div th:if="${result.followUpGrading}" class="status-panel" role="status">
+                    <h2>Grading your follow-ups</h2>
+                    <p>This takes a few seconds. The page updates by itself.</p>
+                </div>
+
+                <div th:if="${result.followUpFailed}" class="status-panel">
+                    <h2>Follow-up grading didn't finish</h2>
+                    <p th:text="${result.failure}">The grading service hit its rate limit.</p>
+                    <div class="confirm-actions">
+                        <form th:action="@{/drills/{id}/follow-up/regrade(id=${result.drillId})}" method="post">
+                            <button type="submit" class="button">Grade again</button>
+                        </form>
+                        <form th:action="@{/drills/{id}/finish(id=${result.drillId})}" method="post">
+                            <button type="submit" class="button-secondary">Skip and finish</button>
+                        </form>
+                    </div>
+                </div>
+            </th:block>
+        </section>
+
+        <form th:if="${result.state.name() == 'GRADED'}" class="regrade"
+              th:action="@{/drills/{id}/regrade(id=${result.drillId})}" method="post">
             <button type="submit" class="link-button">Grade this answer again</button>
         </form>
     </th:block>
 </main>
-<script th:if="${result.grading}" th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
+<script th:if="${result.pending}" th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
 </body>
 </html>

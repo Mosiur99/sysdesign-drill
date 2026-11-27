@@ -49,6 +49,12 @@ public class Grade {
     @Column(name = "follow_ups", nullable = false)
     private List<FollowUp> followUps = new ArrayList<>();
 
+    private BigDecimal bonus;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "follow_up_results", nullable = false)
+    private List<FollowUpResult> followUpResults = new ArrayList<>();
+
     @Column(name = "unverified_quotes", nullable = false)
     private int unverifiedQuotes;
 
@@ -98,6 +104,14 @@ public class Grade {
         return grade;
     }
 
+    public static Grade followUp(long answerId, BigDecimal bonus, List<FollowUpResult> results, Usage usage) {
+        Grade grade = new Grade(answerId, GradeStatus.OK, usage);
+        grade.bonus = bonus;
+        grade.followUpResults = new ArrayList<>(results);
+        grade.unverifiedQuotes = (int) results.stream().filter(result -> !result.verified()).count();
+        return grade;
+    }
+
     public static Grade failed(long answerId, String reason, String detail, Usage usage) {
         Grade grade = new Grade(answerId, GradeStatus.FAILED, usage);
         grade.failureReason = reason;
@@ -144,6 +158,14 @@ public class Grade {
 
     public String getSummary() {
         return summary;
+    }
+
+    public BigDecimal getBonus() {
+        return bonus;
+    }
+
+    public List<FollowUpResult> getFollowUpResults() {
+        return List.copyOf(followUpResults);
     }
 
     public List<String> getStrengths() {

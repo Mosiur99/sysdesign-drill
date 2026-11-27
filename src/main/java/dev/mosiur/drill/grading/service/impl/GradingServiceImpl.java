@@ -1,8 +1,10 @@
 package dev.mosiur.drill.grading.service.impl;
 
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -22,6 +24,8 @@ import dev.mosiur.drill.drill.domain.DrillKind;
 import dev.mosiur.drill.drill.domain.DrillStatus;
 import dev.mosiur.drill.drill.repository.DrillRepository;
 import dev.mosiur.drill.grading.domain.DimensionScore;
+import dev.mosiur.drill.grading.domain.FollowUp;
+import dev.mosiur.drill.grading.domain.FollowUpResult;
 import dev.mosiur.drill.grading.domain.Grade;
 import dev.mosiur.drill.grading.domain.Grade.Usage;
 import dev.mosiur.drill.grading.domain.GradeStatus;
@@ -33,6 +37,8 @@ import dev.mosiur.drill.grading.model.GradingInput;
 import dev.mosiur.drill.grading.model.ResultView;
 import dev.mosiur.drill.grading.model.ResultView.ChecklistItem;
 import dev.mosiur.drill.grading.model.ResultView.DimensionView;
+import dev.mosiur.drill.grading.model.ResultView.FollowUpView;
+import dev.mosiur.drill.grading.model.ResultView.Score;
 import dev.mosiur.drill.grading.model.ResultView.State;
 import dev.mosiur.drill.grading.model.Rubric;
 import dev.mosiur.drill.grading.repository.GradeRepository;
@@ -121,20 +127,25 @@ public class GradingServiceImpl implements GradingService {
         Drill drill = drills.findById(drillId).orElseThrow(() -> new DrillNotFoundException(drillId));
         Optional<Answer> answer = mainAnswer(drillId);
         Optional<Grade> grade = answer.flatMap(found -> grades.findByAnswerId(found.getId()));
-        State state = state(drill, grade);
+        Optional<Answer> followUpAnswer = answers.findByDrillIdAndRound(drillId, (short) Answer.FOLLOW_UP_ROUND);
+        Optional<Grade> followUpGrade = followUpAnswer.flatMap(found -> grades.findByAnswerId(found.getId()));
+        State state = state(drill, grade, followUpAnswer, followUpGrade);
         Integer minutes = answer.map(Answer::getSecondsSpent).map(seconds -> Math.round(seconds / 60f)).orElse(null);
         int words = answer.map(Answer::getWordCount).orElse(0);
         String title = drill.getProblem().getTitle();
         boolean retry = drill.getKind() == DrillKind.RETRY;
-        if (state != State.GRADED) {
+        if (state == State.NOT_SUBMITTED || state == State.GRADING || state == State.FAILED) {
             String failure = state == State.FAILED ? failureMessage(grade.orElseThrow().getFailureReason()) : null;
             return new ResultView(drillId, title, drill.getScheduledFor(), retry, minutes, words, state, null, null,
-                    List.of(), List.of(), List.of(), failure);
+                    List.of(), List.of(), List.of(), List.of(), failure);
         }
         Grade graded = grade.orElseThrow();
+        String failure = state == State.FOLLOW_UP_FAILED
+                ? failureMessage(followUpGrade.orElseThrow().getFailureReason()) : null;
         return new ResultView(drillId, title, drill.getScheduledFor(), retry, minutes, words, state,
-                graded.getOverall().setScale(0, RoundingMode.HALF_UP).intValue(), graded.getSummary(),
-                graded.getImprovements(), dimensionViews(graded), checklist(drill, graded), null);
+                score(drill, graded, followUpGrade), graded.getSummary(), graded.getImprovements(),
+                dimensionViews(graded), checklist(drill, graded),
+                followUpViews(graded, followUpAnswer, followUpGrade), failure);
     }
 
     private GradingInput load(long drillId) {
@@ -220,14 +231,55 @@ public class GradingServiceImpl implements GradingService {
         return answers.findByDrillIdAndRound(drillId, (short) Answer.MAIN_ROUND);
     }
 
-    private static State state(Drill drill, Optional<Grade> grade) {
-        if (drill.isEditable()) {
-            return State.NOT_SUBMITTED;
+    private static State state(Drill drill, Optional<Grade> grade, Optional<Answer> followUpAnswer,
+                               Optional<Grade> followUpGrade) {
+        return switch (drill.getStatus()) {
+            case ASSIGNED, IN_PROGRESS, SKIPPED -> State.NOT_SUBMITTED;
+            case GRADING -> grade.isEmpty() ? State.GRADING : State.FAILED;
+            case GRADED -> State.GRADED;
+            case FOLLOW_UP -> followUpGrade.isEmpty() || followUpAnswer.isEmpty()
+                    ? State.FOLLOW_UP_GRADING : State.FOLLOW_UP_FAILED;
+            case DONE -> State.DONE;
+        };
+    }
+
+    private static Score score(Drill drill, Grade main, Optional<Grade> followUpGrade) {
+        int mainScore = round(main.getOverall());
+        if (drill.getStatus() != DrillStatus.DONE) {
+            return new Score(mainScore, null, mainScore, false);
         }
-        if (grade.isEmpty()) {
-            return State.GRADING;
+        Optional<Grade> bonus = followUpGrade.filter(grade -> grade.getStatus() == GradeStatus.OK);
+        int total = round(drill.getFinalScore());
+        return new Score(mainScore, bonus.map(grade -> total - mainScore).orElse(null), total, bonus.isEmpty());
+    }
+
+    private static int round(BigDecimal value) {
+        return value.setScale(0, RoundingMode.HALF_UP).intValue();
+    }
+
+    private static List<FollowUpView> followUpViews(Grade main, Optional<Answer> followUpAnswer,
+                                                    Optional<Grade> followUpGrade) {
+        List<FollowUp> questions = main.getFollowUps();
+        List<FollowUpResult> results = followUpGrade.map(Grade::getFollowUpResults).orElse(List.of());
+        List<FollowUpView> views = new ArrayList<>();
+        for (int i = 0; i < questions.size(); i++) {
+            FollowUp question = questions.get(i);
+            int number = i + 1;
+            String answer = followUpAnswer.map(found -> found.section("follow_up_" + number)).orElse("");
+            FollowUpResult result = i < results.size() ? results.get(i) : null;
+            views.add(new FollowUpView(number, question.question(), sectionTitle(question.dimension()), answer,
+                    result == null ? null : result.score(), result == null ? null : result.evidence(),
+                    result == null || result.verified(), result == null ? null : result.feedback()));
         }
-        return grade.get().getStatus() == GradeStatus.OK ? State.GRADED : State.FAILED;
+        return views;
+    }
+
+    private static String sectionTitle(String dimension) {
+        return Arrays.stream(SectionGuide.values())
+                .filter(guide -> guide.key().equals(dimension))
+                .map(SectionGuide::title)
+                .findFirst()
+                .orElse(null);
     }
 
     private static List<DimensionView> dimensionViews(Grade grade) {

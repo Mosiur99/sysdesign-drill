@@ -1,5 +1,6 @@
 package dev.mosiur.drill.drill.domain;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -46,6 +47,9 @@ public class Drill {
     @Column(name = "submitted_at")
     private Instant submittedAt;
 
+    @Column(name = "final_score")
+    private BigDecimal finalScore;
+
     @Version
     private int version;
 
@@ -82,6 +86,25 @@ public class Drill {
         status = DrillStatus.GRADED;
     }
 
+    public void startFollowUp() {
+        require(DrillStatus.GRADED, "answer follow-ups");
+        status = DrillStatus.FOLLOW_UP;
+    }
+
+    public void finish(BigDecimal finalScore) {
+        if (status != DrillStatus.GRADED && status != DrillStatus.FOLLOW_UP) {
+            throw new IllegalStateException("drill " + id + " is " + status + " and cannot be finished");
+        }
+        this.finalScore = finalScore;
+        status = DrillStatus.DONE;
+    }
+
+    private void require(DrillStatus expected, String action) {
+        if (status != expected) {
+            throw new IllegalStateException("drill " + id + " is " + status + "; cannot " + action);
+        }
+    }
+
     public void regrade() {
         if (status != DrillStatus.GRADING && status != DrillStatus.GRADED) {
             throw new IllegalStateException("drill " + id + " is " + status + " and cannot be graded again");
@@ -115,6 +138,10 @@ public class Drill {
 
     public Instant getStartedAt() {
         return startedAt;
+    }
+
+    public BigDecimal getFinalScore() {
+        return finalScore;
     }
 
     public Instant getSubmittedAt() {

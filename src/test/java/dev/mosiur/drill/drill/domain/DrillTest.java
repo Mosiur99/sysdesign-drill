@@ -3,6 +3,7 @@ package dev.mosiur.drill.drill.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -49,5 +50,25 @@ class DrillTest {
         drill.submit(LATER);
 
         assertThatThrownBy(() -> drill.submit(LATER)).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void followUpsLeadToDoneWithAFinalScore() {
+        drill.submit(LATER);
+        drill.markGraded();
+
+        drill.startFollowUp();
+        drill.finish(new BigDecimal("71.50"));
+
+        assertThat(drill.getStatus()).isEqualTo(DrillStatus.DONE);
+        assertThat(drill.getFinalScore()).isEqualByComparingTo("71.50");
+        assertThatThrownBy(drill::startFollowUp).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void cannotFinishBeforeGrading() {
+        drill.submit(LATER);
+
+        assertThatThrownBy(() -> drill.finish(BigDecimal.ONE)).isInstanceOf(IllegalStateException.class);
     }
 }

@@ -19,6 +19,7 @@ import org.hibernate.type.SqlTypes;
 public class Answer {
 
     public static final int MAIN_ROUND = 1;
+    public static final int FOLLOW_UP_ROUND = 2;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -63,6 +64,11 @@ public class Answer {
     public void finish(Instant startedAt, Instant now) {
         draft = false;
         secondsSpent = (int) Duration.between(startedAt, now).toSeconds();
+        updatedAt = now;
+    }
+
+    public void close(Instant now) {
+        draft = false;
         updatedAt = now;
     }
 

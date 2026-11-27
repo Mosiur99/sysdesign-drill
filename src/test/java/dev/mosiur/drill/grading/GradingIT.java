@@ -1,6 +1,8 @@
 package dev.mosiur.drill.grading;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
@@ -8,6 +10,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -119,6 +122,41 @@ class GradingIT {
     }
 
     @Test
+    void answeredFollowUpsAddToTheFinalScore() {
+        WebSession session = WebSession.signedIn(port);
+        String uri = gradedDrill(session);
+        assertThat(session.page(uri + "/result")).contains("Follow-up questions")
+                .contains("1. What happens when the database is down?").contains("Skip and finish");
+        stubFollowUpGrade();
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("follow_up_1", "If the primary is down, replicas take over reads and writes queue.");
+        form.add("follow_up_2", "Each server leases ranges of IDs from a counter.");
+
+        session.post(uri + "/follow-up", form).expectStatus().isSeeOther();
+
+        long drillId = drillId(uri);
+        await().atMost(Duration.ofSeconds(10)).until(() -> "DONE".equals(status(drillId)));
+        assertThat(finalScore(drillId)).isEqualByComparingTo("55.00");
+        assertThat(session.page(uri + "/result")).contains("<span class=\"score-value\">55</span>")
+                .contains("50 for the answer + 5 from follow-ups")
+                .contains("replicas take over reads").contains("Same depth as before.");
+        session.post(uri + "/follow-up", form).expectStatus().isEqualTo(409);
+    }
+
+    @Test
+    void skippingFollowUpsKeepsTheMainScore() {
+        WebSession session = WebSession.signedIn(port);
+        String uri = gradedDrill(session);
+
+        session.post(uri + "/finish", new LinkedMultiValueMap<>()).expectStatus().isSeeOther();
+
+        assertThat(status(drillId(uri))).isEqualTo("DONE");
+        assertThat(finalScore(drillId(uri))).isEqualByComparingTo("50.00");
+        assertThat(session.page(uri + "/result")).contains("You skipped the follow-ups.")
+                .doesNotContain("Submit follow-up");
+    }
+
+    @Test
     void pollingAsksForNothingWhileGrading() {
         WebSession session = WebSession.signedIn(port);
         TodayDrill drill = dailyDrills.assignToday().orElseThrow();
@@ -145,8 +183,43 @@ class GradingIT {
                 "choices", List.of(Map.of("index", 0, "finish_reason", "stop",
                         "message", Map.of("role", "assistant", "content", grade))),
                 "usage", Map.of("prompt_tokens", 120, "completion_tokens", 30)));
-        GROQ.stubFor(post("/chat/completions").willReturn(aResponse().withStatus(200)
-                .withHeader("Content-Type", "application/json").withBody(body)));
+        GROQ.stubFor(post("/chat/completions")
+                .withRequestBody(matchingJsonPath("$.response_format.json_schema.name", equalTo("system_design_grade")))
+                .willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json").withBody(body)));
+    }
+
+    private void stubFollowUpGrade() {
+        String content = """
+                {"answers": [
+                  {"question": 1, "score": 4, "evidence": "replicas take over reads", "feedback": "Clear."},
+                  {"question": 2, "score": 2, "evidence": "ranges of ids", "feedback": "Same depth as before."}]}
+                """;
+        String body = json.writeValueAsString(Map.of(
+                "model", "openai/gpt-oss-120b",
+                "choices", List.of(Map.of("index", 0, "finish_reason", "stop",
+                        "message", Map.of("role", "assistant", "content", content))),
+                "usage", Map.of("prompt_tokens", 80, "completion_tokens", 20)));
+        GROQ.stubFor(post("/chat/completions")
+                .withRequestBody(matchingJsonPath("$.response_format.json_schema.name", equalTo("follow_up_grade")))
+                .willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json").withBody(body)));
+    }
+
+    private String gradedDrill(WebSession session) {
+        TodayDrill drill = dailyDrills.assignToday().orElseThrow();
+        String uri = "/drills/" + drill.id();
+        stubGrade(drill.id());
+        session.page(uri);
+        session.post(uri + "/submit", answer()).expectStatus().isSeeOther();
+        await().atMost(Duration.ofSeconds(10)).until(() -> "GRADED".equals(status(drill.id())));
+        return uri;
+    }
+
+    private long drillId(String uri) {
+        return Long.parseLong(uri.substring(uri.lastIndexOf('/') + 1));
+    }
+
+    private BigDecimal finalScore(long drillId) {
+        return jdbc.queryForObject("select final_score from drill where id = ?", BigDecimal.class, drillId);
     }
 
     private static MultiValueMap<String, String> answer() {

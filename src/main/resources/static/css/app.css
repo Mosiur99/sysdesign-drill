@@ -976,3 +976,76 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
         flex-basis: 64px;
     }
 }
+
+.summary p + p {
+    margin-top: 4px;
+}
+
+.follow-up {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    border-top: 2px solid var(--ink);
+    padding-top: 24px;
+}
+
+.follow-up-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.follow-up-form label {
+    font-weight: 500;
+}
+
+.follow-up-form textarea {
+    width: 100%;
+    font: inherit;
+    font-size: 15px;
+    line-height: 1.6;
+    padding: 12px 14px;
+    border: 1px solid var(--field);
+    border-radius: 6px;
+    resize: vertical;
+    color: var(--ink);
+}
+
+.follow-up-form .confirm-actions .button {
+    height: 44px;
+    padding: 0 20px;
+}
+
+.follow-up-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+}
+
+.follow-up-question {
+    font-weight: 500;
+}
+
+.follow-up-answer {
+    white-space: pre-wrap;
+    color: var(--ink-soft);
+    background: var(--surface);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 15px;
+}
+
+.follow-up .status-panel .button {
+    height: 44px;
+    padding: 0 20px;
+}
+
+.follow-up-item .dimension-head {
+    margin-top: 8px;
+}
+
+.follow-up-item:last-of-type {
+    padding-bottom: 4px;
+}
