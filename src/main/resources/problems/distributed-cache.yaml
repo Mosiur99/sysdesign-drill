@@ -1,0 +1,27 @@
+slug: distributed-cache
+title: Design a distributed in-memory cache
+difficulty: 2
+topics: [caching, consistency]
+prompt: |
+  Build a shared cache cluster in front of a slow database for a large web application.
+  It must hold 2 TB of data, serve 5 million reads a second with sub-millisecond latency,
+  and keep working when cache nodes are added, removed or crash.
+key_points:
+  - id: consistent-hashing
+    dimension: deep_dive
+    text: Distributes keys with consistent hashing and virtual nodes, so adding or removing a node moves only a small share of keys
+  - id: eviction
+    dimension: deep_dive
+    text: Chooses an eviction policy (LRU, LFU or approximations) and TTLs, and explains memory overhead per entry
+  - id: write-strategy
+    dimension: tradeoffs
+    text: Compares cache-aside, write-through and write-behind, and how each handles stale data
+  - id: stampede
+    dimension: scale_failure
+    text: Prevents cache stampedes on hot or expiring keys with request coalescing, locks, or jittered and early refresh
+  - id: replication
+    dimension: scale_failure
+    text: Decides whether to replicate nodes, considering the cost against simply reloading from the database
+  - id: cluster-size
+    dimension: estimation
+    text: Sizes the cluster from 2 TB and per-node memory and throughput, leaving headroom for growth and failures

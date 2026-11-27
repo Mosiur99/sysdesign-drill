@@ -1,0 +1,27 @@
+slug: pastebin
+title: Design a text paste sharing service
+difficulty: 1
+topics: [storage, caching]
+prompt: |
+  Users paste text (code snippets, logs) of up to 10 MB and get a link to share.
+  Pastes can be public or unlisted and can expire after an hour, a day, or never.
+  Expect 5 million new pastes a day and ten reads for every paste written.
+key_points:
+  - id: blob-metadata-split
+    dimension: architecture
+    text: Stores paste content in object storage and keeps only metadata (id, owner, expiry, size, content key) in the database
+  - id: expiry-cleanup
+    dimension: deep_dive
+    text: Treats expired pastes as gone at read time and removes them with a background job or object lifecycle rules
+  - id: cdn-reads
+    dimension: scale_failure
+    text: Serves popular public pastes from a CDN or cache, since content never changes after creation
+  - id: unguessable-ids
+    dimension: requirements
+    text: Uses random, unguessable ids for unlisted pastes so links cannot be enumerated
+  - id: size-estimate
+    dimension: estimation
+    text: Estimates daily storage from average paste size (most are a few KB) and notes the long tail of large pastes
+  - id: abuse
+    dimension: tradeoffs
+    text: Mentions rate limits and size limits to stop abuse such as hosting malware or spam

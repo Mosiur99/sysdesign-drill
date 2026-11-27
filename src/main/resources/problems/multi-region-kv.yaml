@@ -1,0 +1,27 @@
+slug: multi-region-kv
+title: Design a multi-region key-value store
+difficulty: 3
+topics: [storage, consistency]
+prompt: |
+  Design a key-value store that runs in three regions (America, Europe, Asia). Applications read
+  and write from their nearest region with low latency. Losing an entire region must not lose
+  acknowledged data for the "account" table, while the "session" table may favour speed.
+key_points:
+  - id: partitioning
+    dimension: data_model
+    text: Partitions keys across nodes with consistent hashing and replicates each partition within and across regions
+  - id: per-table-consistency
+    dimension: requirements
+    text: Treats the two tables differently, with synchronous cross-region writes (quorum or consensus) for accounts and asynchronous replication for sessions
+  - id: cap-pacelc
+    dimension: tradeoffs
+    text: Explains the latency or consistency trade-off (CAP and PACELC), including that cross-region round trips cost 100 ms or more
+  - id: conflict-resolution
+    dimension: deep_dive
+    text: Resolves concurrent writes in asynchronously replicated data with vector clocks, last-writer-wins with hybrid clocks, or CRDTs
+  - id: region-failover
+    dimension: scale_failure
+    text: Describes region failover, how clients are rerouted, and how a recovered region catches up through anti-entropy or Merkle trees
+  - id: quorum-math
+    dimension: deep_dive
+    text: Uses tunable quorums (R + W > N) and explains what they guarantee

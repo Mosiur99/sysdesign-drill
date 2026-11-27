@@ -1,0 +1,27 @@
+slug: proximity-search
+title: Design a nearby places search
+difficulty: 2
+topics: [geo, search, caching]
+prompt: |
+  Users open a map app and search for places near them, such as "coffee within 2 km", sorted by
+  distance or rating. There are 200 million places worldwide, with 100,000 searches a second at peak.
+  Business owners add or edit places, and changes can take a few minutes to appear.
+key_points:
+  - id: spatial-index
+    dimension: data_model
+    text: Uses a spatial index (geohash prefixes, quadtree, S2 cells or PostGIS) instead of scanning by latitude and longitude ranges
+  - id: neighbor-cells
+    dimension: deep_dive
+    text: Searches the user's cell plus neighbouring cells to handle edges, and widens the radius when too few results come back
+  - id: read-replicas
+    dimension: scale_failure
+    text: Serves the read-heavy load from replicas or an in-memory index, rebuilt or updated from the source of truth
+  - id: dense-areas
+    dimension: tradeoffs
+    text: Handles uneven density (city centre vs desert) with adaptive cells like a quadtree, versus fixed-size grids
+  - id: search-api
+    dimension: api
+    text: Defines a search API with location, radius, category, sort order and cursor pagination
+  - id: index-size
+    dimension: estimation
+    text: Estimates index memory for 200 million places to decide whether it fits on one machine or needs sharding by region

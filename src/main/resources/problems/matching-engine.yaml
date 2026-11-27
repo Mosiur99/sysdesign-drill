@@ -1,0 +1,31 @@
+slug: matching-engine
+title: Design a stock exchange matching engine
+difficulty: 3
+topics: [real-time, consistency, payments]
+prompt: |
+  Build the core of a small stock exchange. Traders send limit and market orders and cancellations.
+  Orders must be matched fairly by price, then by arrival time, with latency in microseconds to low
+  milliseconds. Every trade must be recorded exactly once and the system must recover after a crash
+  without losing or duplicating trades.
+key_points:
+  - id: order-book
+    dimension: data_model
+    text: Keeps an in-memory order book per symbol with price levels (sorted map) and a FIFO queue at each level
+  - id: single-thread
+    dimension: deep_dive
+    text: Processes each symbol's orders on a single thread in sequence, avoiding locks and giving a deterministic order
+  - id: sequencer
+    dimension: architecture
+    text: Puts a sequencer in front that assigns a global sequence number and writes every order to a durable journal before matching
+  - id: replay-recovery
+    dimension: scale_failure
+    text: Recovers by replaying the journal from a snapshot, which works because matching is deterministic
+  - id: hot-standby
+    dimension: scale_failure
+    text: Runs a hot standby that consumes the same sequenced stream for fast failover
+  - id: fairness
+    dimension: requirements
+    text: States price-time priority and the need for an audit trail of every order event
+  - id: latency-tradeoff
+    dimension: tradeoffs
+    text: Discusses the cost of durable writes on the critical path (batching, replicated in-memory journal) against latency

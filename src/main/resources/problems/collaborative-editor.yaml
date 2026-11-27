@@ -1,0 +1,27 @@
+slug: collaborative-editor
+title: Design a collaborative document editor
+difficulty: 3
+topics: [real-time, consistency, storage]
+prompt: |
+  Several people edit the same document at the same time and see each other's changes and
+  cursors within a fraction of a second. Edits made while offline must merge when the user
+  reconnects. Users can view the document's history and restore an older version.
+key_points:
+  - id: merge-algorithm
+    dimension: deep_dive
+    text: Uses operational transformation or CRDTs to merge concurrent edits, and explains why last-writer-wins on the whole document fails
+  - id: session-server
+    dimension: architecture
+    text: Routes all editors of one document to the same collaboration server (sticky by document id) that orders operations
+  - id: op-log
+    dimension: data_model
+    text: Stores an append-only operation log with periodic snapshots, so loading does not replay the whole history
+  - id: offline-merge
+    dimension: deep_dive
+    text: Sends offline edits with the version they were based on, so the server can transform or merge them on reconnect
+  - id: presence
+    dimension: architecture
+    text: Treats cursors and presence as ephemeral messages that are broadcast but not stored
+  - id: server-failover
+    dimension: scale_failure
+    text: Recovers when a collaboration server dies by moving the document to another server that reloads from the log

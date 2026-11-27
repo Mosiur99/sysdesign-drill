@@ -1,0 +1,24 @@
+slug: like-counter
+title: Design a like counter for posts
+difficulty: 1
+topics: [caching, consistency, storage]
+prompt: |
+  Every post in a social app shows how many likes it has, and users can like or unlike a post.
+  Most posts get a few likes, but a viral post can get 50,000 likes a second.
+  A user can like a post at most once. Counts can lag by a few seconds.
+key_points:
+  - id: like-record
+    dimension: data_model
+    text: Stores one row per (post, user) with a unique key, so liking twice is rejected and unliking is a delete
+  - id: count-separate
+    dimension: architecture
+    text: Keeps the displayed count separate from the like records instead of running COUNT(*) on each read
+  - id: hot-counter
+    dimension: deep_dive
+    text: Avoids a single hot row for viral posts by batching increments in a buffer or splitting the counter into shards that are summed
+  - id: eventual-count
+    dimension: tradeoffs
+    text: Accepts an approximate, slightly delayed count in exchange for write throughput, as the prompt allows
+  - id: rebuild
+    dimension: scale_failure
+    text: Can recompute counts from the like records if the cached counter is lost or drifts

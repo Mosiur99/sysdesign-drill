@@ -1,0 +1,28 @@
+slug: feature-flags
+title: Design a feature flag service
+difficulty: 1
+topics: [caching, consistency]
+prompt: |
+  Product teams want to turn features on and off without deploying, roll a feature out to
+  5% of users and then more, and target flags at specific countries or customer plans.
+  300 services check flags on every request, at about 1 million checks a second in total.
+  A flag change should reach all services within 30 seconds.
+key_points:
+  - id: local-evaluation
+    dimension: architecture
+    text: Evaluates flags inside each service from a locally cached rule set (SDK), not with a network call per check
+  - id: change-propagation
+    dimension: architecture
+    text: Propagates changes by streaming or polling a versioned snapshot, so services only download when something changed
+  - id: sticky-rollout
+    dimension: deep_dive
+    text: Makes percentage rollouts sticky by hashing user id plus flag key into a bucket, so a user does not flip between on and off
+  - id: safe-default
+    dimension: scale_failure
+    text: Keeps the last known rules and a coded default when the flag service is unreachable, so an outage does not break requests
+  - id: audit
+    dimension: requirements
+    text: Records who changed which flag and when, with the ability to roll back quickly
+  - id: rule-model
+    dimension: data_model
+    text: Models a flag as ordered targeting rules (attribute conditions) with a rollout percentage and a default variant

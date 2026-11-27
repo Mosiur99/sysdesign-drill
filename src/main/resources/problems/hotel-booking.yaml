@@ -1,0 +1,27 @@
+slug: hotel-booking
+title: Design a hotel reservation system
+difficulty: 2
+topics: [consistency, payments, search]
+prompt: |
+  A booking site lists 1 million hotels. Guests search by city and dates, see which room types are
+  available and the price, and book. Hotels set how many rooms of each type they have per night.
+  The site must not overbook, and guests may retry a booking if their connection drops.
+key_points:
+  - id: inventory-per-night
+    dimension: data_model
+    text: Stores availability per hotel, room type and night (total and booked), since a stay spans several nights
+  - id: multi-night-update
+    dimension: deep_dive
+    text: Reserves all nights of a stay in one transaction with conditional updates or locks, so a partly booked stay cannot happen
+  - id: idempotent-booking
+    dimension: api
+    text: Uses an idempotency key on the booking request so a retry does not create a second reservation
+  - id: search-separate
+    dimension: architecture
+    text: Serves search from a separate, slightly stale index or cache, and checks real availability only at booking time
+  - id: overbooking-policy
+    dimension: tradeoffs
+    text: Mentions that real hotels sometimes allow controlled overbooking, and that this is a business rule, not a system default
+  - id: payment-hold
+    dimension: scale_failure
+    text: Handles payment after the reservation with a pending state and timeout that releases the rooms

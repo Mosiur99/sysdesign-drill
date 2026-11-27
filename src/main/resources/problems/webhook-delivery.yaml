@@ -1,0 +1,27 @@
+slug: webhook-delivery
+title: Design a webhook delivery system
+difficulty: 1
+topics: [messaging, scheduling]
+prompt: |
+  Your platform notifies customers' servers about events (payment succeeded, order refunded)
+  by sending HTTP POST requests to URLs they register. Some customer servers are slow or down
+  for hours. Customers need every event eventually, and need to trust that the request came from you.
+key_points:
+  - id: queue-workers
+    dimension: architecture
+    text: Writes events to a queue and delivers them with workers, so a slow endpoint does not block the platform
+  - id: retry-backoff
+    dimension: scale_failure
+    text: Retries failed deliveries with exponential backoff and jitter over hours or days, then marks them failed and alerts the customer
+  - id: per-endpoint-isolation
+    dimension: scale_failure
+    text: Isolates endpoints (per-endpoint queues or concurrency limits) so one dead customer cannot exhaust all workers
+  - id: signature
+    dimension: api
+    text: Signs each request with an HMAC of the body and a timestamp using a per-customer secret, so receivers can verify it and reject replays
+  - id: at-least-once
+    dimension: tradeoffs
+    text: Explains that delivery is at-least-once and includes an event id so receivers can deduplicate
+  - id: delivery-log
+    dimension: data_model
+    text: Stores delivery attempts with status codes so customers can inspect and replay events
