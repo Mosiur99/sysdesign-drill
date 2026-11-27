@@ -46,6 +46,14 @@ class GradeValidatorTest {
     }
 
     @Test
+    void ignoresSectionHeadingsCopiedIntoAQuote() {
+        String answer = GradeValidator.normalise("Users shorten long links.\nReads dominate.");
+
+        assertThat(GradeValidator.isQuoted("## requirements\nUsers shorten long links.", answer)).isTrue();
+        assertThat(GradeValidator.isQuoted("## requirements", answer)).isFalse();
+    }
+
+    @Test
     void flagsInventedQuotes() {
         GradeDraft draft = validator.validate(json.readTree(gradeJson(Map.of(),
                 Map.of(Dimension.DEEP_DIVE, "we shard by user id with consistent hashing"))), input());

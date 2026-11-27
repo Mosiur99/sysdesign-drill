@@ -67,7 +67,7 @@ class LlmClientImplTest {
         server.verify(postRequestedFor(urlEqualTo(PATH))
                 .withHeader("Authorization", equalTo("Bearer " + KEY))
                 .withRequestBody(equalToJson("""
-                        {"model": "openai/gpt-oss-120b", "temperature": 0,
+                        {"model": "openai/gpt-oss-120b", "temperature": 0, "reasoning_effort": "low",
                          "messages": [{"role": "system", "content": "Add numbers."},
                                       {"role": "user", "content": "2 + 2"}],
                          "response_format": {"type": "json_schema",
@@ -130,6 +130,18 @@ class LlmClientImplTest {
     }
 
     @Test
+    void retriesWhenTheModelOutputFailsGroqsSchemaCheck() {
+        stubSequence(aResponse().withStatus(400).withBody(
+                        "{\"error\": {\"message\": \"Generated JSON does not match the expected schema.\", "
+                                + "\"code\": \"json_validate_failed\"}}"),
+                ok("{\\\"sum\\\": 4}", "stop"));
+
+        LlmResult result = client(KEY).complete(request());
+
+        assertThat(result.attempts()).isEqualTo(2);
+    }
+
+    @Test
     void rejectsATruncatedAnswer() {
         server.stubFor(post(PATH).willReturn(ok("{\\\"sum\\\": ", "length")));
 
@@ -177,7 +189,7 @@ class LlmClientImplTest {
     }
 
     private LlmClientImpl client(String key, Duration readTimeout) {
-        LlmProperties properties = new LlmProperties(server.baseUrl() + "/openai/v1", key, "openai/gpt-oss-120b",
+        LlmProperties properties = new LlmProperties(server.baseUrl() + "/openai/v1", key, "openai/gpt-oss-120b", "low",
                 Duration.ofSeconds(2), readTimeout, Duration.ofSeconds(30), 3);
         return new LlmClientImpl(properties, RestClient.builder(), json, sleeps::add);
     }

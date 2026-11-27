@@ -35,3 +35,40 @@ Unit tests run with Surefire. Integration tests (`*IT`) run with Failsafe agains
 set -a; source .env; set +a
 ./mvnw verify -Dtest=none -Dsurefire.failIfNoSpecifiedTests=false -Dit.test=LlmLiveSmokeIT
 ```
+
+## Grader eval
+
+`src/test/resources/grader-eval` holds 12 hand-written answers: a strong, an average and a weak one for four problems. The eval grades each answer twice with the real model and checks that the mean lands in its band and that two runs differ by at most 1 point on any section. It needs `GROQ_API_KEY`, uses about 75K tokens, and paces itself to the free tier's 8K tokens a minute, so it takes about 12 minutes. It never runs in CI.
+
+```bash
+set -a; source .env; set +a
+./mvnw verify -Pgrader-eval -Dtest=none -Dsurefire.failIfNoSpecifiedTests=false
+```
+
+Add `-Deval.runs=1` for a quicker single pass, or `-Deval.cases=average` to run only matching answers. The report is written to `target/grader-eval/report.md`.
+
+Latest result (2026-11-27, `openai/gpt-oss-120b`, reasoning effort `low`): 12 of 12 in band, largest difference between runs on one section 1. Section scores are listed in rubric order, from requirements to trade-offs.
+
+| Answer | Band | Scores | Mean | In band | Section scores | Max section difference | Unverified quotes |
+|---|---|---|---|---|---|---|---|
+| chat-service/average | 35-64 | 40 / 40 | 40 | yes | 22222111 / 22222111 | 0 | 0 |
+| chat-service/strong | 75-100 | 100 / 100 | 100 | yes | 44444444 / 44444444 | 0 | 2 |
+| chat-service/weak | 0-34 | 16 / 16 | 16 | yes | 10111010 / 10111010 | 0 | 0 |
+| payment-ledger/average | 35-64 | 46 / 44 | 45 | yes | 22222122 / 21222122 | 1 | 1 |
+| payment-ledger/strong | 75-100 | 98 / 98 | 98 | yes | 44344444 / 44344444 | 0 | 3 |
+| payment-ledger/weak | 0-34 | 20 / 20 | 20 | yes | 10111101 / 10111101 | 0 | 0 |
+| rate-limiter/average | 35-64 | 39 / 39 | 39 | yes | 21122211 / 21122211 | 0 | 0 |
+| rate-limiter/strong | 75-100 | 100 / 97 | 98 | yes | 44444444 / 34444444 | 1 | 0 |
+| rate-limiter/weak | 0-34 | 24 / 24 | 24 | yes | 10022101 / 10022101 | 0 | 0 |
+| url-shortener/average | 35-64 | 50 / 46 | 48 | yes | 22222222 / 22222122 | 1 | 0 |
+| url-shortener/strong | 75-100 | 100 / 100 | 100 | yes | 44444444 / 44444444 | 0 | 0 |
+| url-shortener/weak | 0-34 | 20 / 20 | 20 | yes | 10111110 / 10111110 | 0 | 0 |
+
+What tuning changed:
+
+- The model sometimes copied the `## section` headings into its quotes, which made correct quotes fail the check. The check now ignores those headings, and the prompt asks for one continuous passage.
+- Groq sometimes rejects output that breaks the JSON schema with a 400 `json_validate_failed`. The client now retries that once like a server error instead of failing the grade.
+- The 1 and 2 anchors were rewritten: 1 is generic or wrong, 2 is correct and specific but incomplete. An answer that is correct but incomplete in every section therefore scores 50.
+- The first bands put "average" at 50 to 74, but the sample average answers mix generic and specific sections and scored 39 to 48 every time. The bands were moved to weak 0 to 34, average 35 to 64 and strong 75 to 100, with gaps so a pass means clear separation.
+- Reasoning effort `low` uses about 3K tokens per grade instead of 5K at `medium`, with the same rankings, so it is the default.
+

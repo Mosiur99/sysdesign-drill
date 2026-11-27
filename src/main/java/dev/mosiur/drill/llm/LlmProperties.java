@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -15,6 +16,7 @@ public record LlmProperties(
         @NotBlank String baseUrl,
         String apiKey,
         @NotBlank String model,
+        @Pattern(regexp = "low|medium|high") String reasoningEffort,
         @NotNull Duration connectTimeout,
         @NotNull Duration readTimeout,
         @NotNull Duration maxRetryAfter,

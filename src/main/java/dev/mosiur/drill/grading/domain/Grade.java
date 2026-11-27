@@ -184,6 +184,26 @@ public class Grade {
         return unverifiedQuotes;
     }
 
+    public String getModel() {
+        return model;
+    }
+
+    public int getPromptTokens() {
+        return promptTokens;
+    }
+
+    public int getCompletionTokens() {
+        return completionTokens;
+    }
+
+    public long getLatencyMs() {
+        return latencyMs;
+    }
+
+    public String getFailureDetail() {
+        return failureDetail;
+    }
+
     public int getAttempts() {
         return attempts;
     }

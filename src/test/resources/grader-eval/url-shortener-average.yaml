@@ -1,0 +1,26 @@
+problem: url-shortener
+level: average
+band: [35, 64]
+sections:
+  requirements: |
+    Users create short links and get redirected. Links can expire. Show click counts.
+    It should be fast and highly available.
+  estimation: |
+    100M links per month. Reads are 100x more, so about 10 billion redirects a month, roughly 4k per second.
+  api: |
+    POST /shorten with the long url, returns the short url.
+    GET /{code} redirects to the long url.
+  data_model: |
+    A SQL table urls(id, code, long_url, expires_at, clicks). Index on code.
+  architecture: |
+    flowchart LR
+      client --> app[App servers]
+      app --> cache[(Redis)]
+      app --> db[(MySQL)]
+    App servers check Redis first and then MySQL. On each redirect we increment the clicks column.
+  deep_dive: |
+    The code is 7 random base62 characters. If the code already exists we generate another one and try again.
+  scale_failure: |
+    Use a cache for popular links and add read replicas to MySQL. Run several app servers behind a load balancer.
+  tradeoffs: |
+    SQL is simple and we know it well, but it may need sharding later.

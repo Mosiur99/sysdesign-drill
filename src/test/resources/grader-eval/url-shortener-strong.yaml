@@ -1,0 +1,40 @@
+problem: url-shortener
+level: strong
+band: [75, 100]
+sections:
+  requirements: |
+    Functional: create a short link for a long URL, redirect on open, optional expiry, click count per link for the owner.
+    Non-functional: redirects dominate at about 100 reads per write, so redirect latency (p99 under 50 ms) and availability matter most. Creating links can be slower. Codes must never collide and links must not be lost.
+    Out of scope: custom vanity codes, analytics beyond a count.
+  estimation: |
+    Writes: 100M links a month is about 40 links/s average, maybe 200/s at peak.
+    Reads: 100x that, about 4k redirects/s average and 20-40k/s at peak.
+    Storage: 100M x 12 months x 5 years = 6B links. At about 500 bytes per row that is 3 TB, so it must be partitioned but it is not huge.
+    Codes: 62^7 is about 3.5 trillion, so 7 characters of base62 is plenty for 6B links.
+  api: |
+    POST /links {url, expiresAt?} -> 201 {code, shortUrl}. The request takes an Idempotency-Key so a retry does not create two links.
+    GET /{code} -> 302 Location: long URL, or 404 / 410 if unknown or expired.
+    GET /links/{code}/stats -> {clicks} for the owner only.
+  data_model: |
+    links: code (partition key) -> long_url, owner_id, created_at, expires_at.
+    Every redirect is a single-key lookup by code, so a key-value or wide-column store partitioned by code (DynamoDB or Cassandra) fits; no joins are needed.
+    click_counts: code -> count, updated by the aggregator, not on the redirect path.
+  architecture: |
+    flowchart LR
+      client --> lb[Load balancer]
+      lb --> api[Link service]
+      api --> cache[(Redis cache)]
+      api --> kv[(Links KV store)]
+      api --> log[(Click event log - Kafka)]
+      log --> agg[Click aggregator]
+      agg --> counts[(click_counts)]
+      api --> ids[ID range allocator]
+    The redirect path reads the cache, falls back to the store, and appends a click event to Kafka without waiting for any counter update.
+  deep_dive: |
+    Code generation: each link service instance leases a block of 10,000 IDs from the ID range allocator (a single row in a strongly consistent store updated with compare-and-set). The instance hands out IDs from its block in memory and encodes each ID in base62. There are no collisions and no retry loop, unlike random codes where collisions grow as the table fills. If an instance dies, the rest of its block is simply skipped. To avoid guessable sequential codes the ID can be shuffled with a reversible bit permutation before encoding.
+  scale_failure: |
+    Hot codes are served from Redis with a TTL; a cache miss reads the KV store and fills the cache. If a cache node fails, its keys miss and fall through to the store, which is sized for that load for a short time; consistent hashing limits the miss storm to one node's keys. The KV store is replicated across three zones. The allocator is only on the write path, and each instance holds a lease of 10k IDs, so a short allocator outage does not stop link creation. Click events are buffered in Kafka, so the aggregator can fall behind without slowing redirects.
+  tradeoffs: |
+    302 instead of 301: a 301 is cached by browsers, so repeat clicks would never reach us and the count would be wrong; 302 costs one more request per click but keeps counts accurate.
+    ID ranges vs random codes: ranges need a small allocator service but never collide; random codes need no coordination but need a uniqueness check and retries.
+    Async counting: counts are seconds behind, which is fine for owners, in exchange for a fast redirect path.

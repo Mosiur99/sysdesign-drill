@@ -1,0 +1,24 @@
+problem: chat-service
+level: average
+band: [35, 64]
+sections:
+  requirements: |
+    1:1 and group chat, real time, message history, online status and read receipts.
+  estimation: |
+    50M daily users each sending around 40 messages is 2 billion messages a day.
+  api: |
+    Clients connect with WebSocket. send_message(conversation, text). REST endpoint to load old messages.
+  data_model: |
+    A messages table with id, conversation_id, sender, text and timestamp. Cassandra because of the write volume.
+  architecture: |
+    flowchart LR
+      app --> ws[WebSocket servers]
+      ws --> chat[Chat service]
+      chat --> db[(Cassandra)]
+    The chat service finds the receiver's WebSocket server and forwards the message.
+  deep_dive: |
+    Messages are sorted by timestamp when loading a conversation.
+  scale_failure: |
+    Add more WebSocket servers. Use a queue between services so spikes are absorbed.
+  tradeoffs: |
+    Cassandra gives scale but only eventual consistency.

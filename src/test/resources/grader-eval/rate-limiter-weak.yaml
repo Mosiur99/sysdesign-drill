@@ -1,0 +1,17 @@
+problem: rate-limiter
+level: weak
+band: [0, 34]
+sections:
+  requirements: |
+    Stop users from sending too many requests.
+  estimation: ""
+  api: ""
+  data_model: |
+    Keep a count in each gateway's memory.
+  architecture: |
+    Each gateway counts requests per key and blocks when the count is over 1000.
+  deep_dive: |
+    Reset the counts every minute with a timer.
+  scale_failure: ""
+  tradeoffs: |
+    It is simple.

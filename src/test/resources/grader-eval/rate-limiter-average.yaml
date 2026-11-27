@@ -1,0 +1,23 @@
+problem: rate-limiter
+level: average
+band: [35, 64]
+sections:
+  requirements: |
+    Each API key can make 1,000 requests a minute. Over the limit we reject the request.
+  estimation: |
+    Maybe 10k requests per second in total.
+  api: |
+    If the limit is exceeded return HTTP 429.
+  data_model: |
+    Store a counter per API key in Redis with a one minute expiry.
+  architecture: |
+    flowchart LR
+      client --> gw[Gateways]
+      gw --> redis[(Redis)]
+    All gateways use the same Redis so the count is shared.
+  deep_dive: |
+    Use a fixed window: INCR the key for the current minute and set EXPIRE to 60 seconds. If the value is above the limit, reject.
+  scale_failure: |
+    Redis can be clustered if there is more load.
+  tradeoffs: |
+    Fixed window is simple but allows bursts at the edge of the minute.

@@ -1,0 +1,17 @@
+problem: chat-service
+level: weak
+band: [0, 34]
+sections:
+  requirements: |
+    Users send messages to each other.
+  estimation: ""
+  api: |
+    POST /message.
+  data_model: |
+    Store messages in MySQL.
+  architecture: |
+    The app polls the server every few seconds for new messages.
+  deep_dive: ""
+  scale_failure: |
+    Use a bigger database server.
+  tradeoffs: ""

@@ -1,0 +1,24 @@
+problem: payment-ledger
+level: average
+band: [35, 64]
+sections:
+  requirements: |
+    Users top up, send money and withdraw. Balances must always be correct.
+  estimation: |
+    A few million transactions per day.
+  api: |
+    POST /transfer {from, to, amount}. POST /topup. POST /withdraw. Clients can send an idempotency key so retries are not charged twice.
+  data_model: |
+    accounts(id, user_id, balance) and transactions(id, from_account, to_account, amount, status, created_at). Postgres.
+  architecture: |
+    flowchart LR
+      app --> api[Payment service]
+      api --> db[(Postgres)]
+      api --> provider[Card and bank providers]
+    The payment service updates both balances and inserts the transaction row in one database transaction.
+  deep_dive: |
+    If the card provider times out we mark the top-up as failed and the user can try again.
+  scale_failure: |
+    Use database replicas for reads and retry provider calls when they fail.
+  tradeoffs: |
+    Postgres gives transactions, which we need for money, but scaling writes is harder.

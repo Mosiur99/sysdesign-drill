@@ -1,0 +1,18 @@
+problem: url-shortener
+level: weak
+band: [0, 34]
+sections:
+  requirements: |
+    Make long links short.
+  estimation: ""
+  api: |
+    One endpoint to make a link.
+  data_model: |
+    Save the links in a database.
+  architecture: |
+    A web server and a database.
+  deep_dive: |
+    We can use a hash of the url as the short code.
+  scale_failure: |
+    Add more servers if needed.
+  tradeoffs: ""

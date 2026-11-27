@@ -1,0 +1,37 @@
+problem: chat-service
+level: strong
+band: [75, 100]
+sections:
+  requirements: |
+    One-to-one and group chat (up to 500 members), near real-time delivery (under 300 ms when both are online), order kept within a conversation, history readable on every device, online status and read receipts.
+    Messages must never be lost once the server acknowledged them. Presence can be approximate.
+  estimation: |
+    50M DAU, about 10M concurrently connected at peak. At 50k WebSocket connections per gateway that is about 200 gateway servers.
+    40 messages per user per day = 2B messages/day, about 23k/s average, 100k/s peak. At 200 bytes each that is 400 GB/day, about 150 TB/year before replication.
+  api: |
+    WebSocket frames: send {clientMsgId, conversationId, body} -> ack {clientMsgId, seq}; server push {conversationId, seq, sender, body}; read {conversationId, seq}.
+    REST: GET /conversations/{id}/messages?afterSeq=&limit=100 for history and sync. clientMsgId makes sends idempotent on retry.
+  data_model: |
+    messages: partition key conversation_id, clustering key seq (per-conversation monotonic), columns sender_id, body, sent_at. A wide-column store (Cassandra) fits: writes are append-only and reads are ranges within one conversation.
+    conversation_members: conversation_id -> user ids. user_conversations: user_id -> conversation ids with last_read_seq.
+  architecture: |
+    flowchart LR
+      app[Mobile app] --> gw[WebSocket gateways]
+      gw --> reg[(Session registry: user -> gateway)]
+      gw --> chat[Chat service]
+      chat --> seqr[Conversation sequencer]
+      chat --> store[(Cassandra messages)]
+      chat --> bus[(Kafka)]
+      bus --> fanout[Fan-out workers]
+      fanout --> gw
+      fanout --> push[Push notifications]
+    Clients keep one long-lived WebSocket to a gateway; the session registry (Redis) maps each user's devices to their gateway.
+  deep_dive: |
+    Ordering: every conversation is owned by one chat service partition (conversations are hashed to partitions), which assigns the next seq number and writes the message before acking. Order comes from this server-assigned seq, never from client clocks.
+    Offline delivery and multi-device: each device stores the last seq it has per conversation. On reconnect it calls history with afterSeq and gets everything it missed in order. Offline users also get a push notification to wake the app; the push carries no message content needed for correctness.
+  scale_failure: |
+    Group fan-out: a message is stored once; fan-out workers look up online members in the session registry and send one frame per gateway, not per member. Members who are offline sync later. For 500-member groups that is at most a few hundred registry lookups, batched.
+    A gateway crash drops its connections; clients reconnect to another gateway and resync from their last seq, so nothing is lost. Cassandra is replicated 3x across zones; Kafka decouples fan-out from the write path.
+  tradeoffs: |
+    Presence is best effort: clients send a heartbeat every 30 s and are shown offline after 90 s without one; we only publish presence to open conversations, because pushing exact presence to big friend lists would cost more than the messages themselves.
+    A single sequencer per conversation limits throughput of one very busy conversation, which is acceptable at 500 members, in exchange for simple ordering.

@@ -27,6 +27,7 @@ public class GradeValidator {
     private static final int FOLLOW_UPS = 2;
     private static final Pattern FRAGMENT_BREAK = Pattern.compile("\\.\\.\\.|…");
     private static final Pattern WHITESPACE = Pattern.compile("\\s+");
+    private static final Pattern SECTION_HEADING = Pattern.compile("(?m)^\\s*##\\s*[a-z_]+\\s*$");
 
     public GradeDraft validate(JsonNode json, GradingInput input) {
         Map<Dimension, ScoreDraft> scores = scores(json.path("dimensions"), input);
@@ -72,7 +73,8 @@ public class GradeValidator {
     }
 
     static boolean isQuoted(String evidence, String normalisedAnswer) {
-        List<String> fragments = FRAGMENT_BREAK.splitAsStream(evidence)
+        String withoutHeadings = SECTION_HEADING.matcher(evidence).replaceAll(" ");
+        List<String> fragments = FRAGMENT_BREAK.splitAsStream(withoutHeadings)
                 .map(GradeValidator::normalise)
                 .filter(fragment -> !fragment.isEmpty())
                 .toList();

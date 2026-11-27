@@ -3,6 +3,7 @@ package dev.mosiur.drill.llm.service.impl;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +32,7 @@ public class LlmClientImpl implements LlmClient {
     private static final Logger log = LoggerFactory.getLogger(LlmClientImpl.class);
     private static final Duration DEFAULT_RETRY_AFTER = Duration.ofSeconds(2);
     private static final Duration SERVER_ERROR_BACKOFF = Duration.ofSeconds(1);
+    private static final String SCHEMA_FAILURE = "json_validate_failed";
 
     private final LlmProperties properties;
     private final RestClient http;
@@ -91,14 +93,17 @@ public class LlmClientImpl implements LlmClient {
         List<Map<String, String>> messages = request.messages().stream()
                 .map(message -> Map.of("role", message.role(), "content", message.content()))
                 .toList();
-        return Map.of(
-                "model", properties.model(),
-                "temperature", 0,
-                "messages", messages,
-                "response_format", Map.of(
-                        "type", "json_schema",
-                        "json_schema", Map.of("name", request.schemaName(), "strict", true,
-                                "schema", request.schema())));
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("model", properties.model());
+        body.put("temperature", 0);
+        if (properties.reasoningEffort() != null) {
+            body.put("reasoning_effort", properties.reasoningEffort());
+        }
+        body.put("messages", messages);
+        body.put("response_format", Map.of(
+                "type", "json_schema",
+                "json_schema", Map.of("name", request.schemaName(), "strict", true, "schema", request.schema())));
+        return body;
     }
 
     private Outcome send(Map<String, Object> body) {
@@ -114,6 +119,9 @@ public class LlmClientImpl implements LlmClient {
                             return Outcome.ok(text);
                         }
                         String detail = status + " " + errorMessage(text);
+                        if (status == 400 && SCHEMA_FAILURE.equals(errorCode(text))) {
+                            return Outcome.failed(Reason.INVALID_RESPONSE, detail, null);
+                        }
                         if (status == 429) {
                             return Outcome.failed(Reason.RATE_LIMITED, detail,
                                     retryAfter(res.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)));
@@ -168,6 +176,14 @@ public class LlmClientImpl implements LlmClient {
 
     private static LlmException invalid(String detail, int attempts) {
         return new LlmException(Reason.INVALID_RESPONSE, detail, attempts);
+    }
+
+    private String errorCode(String body) {
+        try {
+            return json.readTree(body).path("error").path("code").asString("");
+        } catch (JacksonException e) {
+            return "";
+        }
     }
 
     private String errorMessage(String body) {

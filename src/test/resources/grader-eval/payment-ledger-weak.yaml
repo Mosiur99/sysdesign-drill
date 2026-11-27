@@ -1,0 +1,18 @@
+problem: payment-ledger
+level: weak
+band: [0, 34]
+sections:
+  requirements: |
+    Wallet app with balances.
+  estimation: ""
+  api: |
+    Endpoints for topup and transfer.
+  data_model: |
+    A users table with a balance column.
+  architecture: |
+    The app calls the backend, which updates the balance.
+  deep_dive: |
+    For a transfer, subtract from one balance and add to the other.
+  scale_failure: ""
+  tradeoffs: |
+    NoSQL would scale better.

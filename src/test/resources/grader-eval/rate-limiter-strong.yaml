@@ -1,0 +1,33 @@
+problem: rate-limiter
+level: strong
+band: [75, 100]
+sections:
+  requirements: |
+    Limit each API key to its plan's requests per minute (1,000 by default) across all 50 gateway nodes.
+    The limiter must add only a few milliseconds per request, and the limit can be approximate: a few percent over is acceptable, being far over is not.
+    Rejections are immediate with a clear 429. Plans change without a deploy.
+  estimation: |
+    Assume 100k active keys and 20k requests/s at peak. One counter per key and window is about 100 bytes, so 100k keys need about 10 MB: a single Redis primary holds it easily. 20k checks/s is well within one Redis node (100k+ ops/s), with a replica for failover.
+  api: |
+    Allowed requests pass through with headers X-RateLimit-Limit, X-RateLimit-Remaining and X-RateLimit-Reset.
+    Rejected requests get 429 Too Many Requests with Retry-After: <seconds until the window frees> and the same headers, and a JSON body {"error": "rate_limited"}.
+  data_model: |
+    Redis keys rl:{apiKey}:{windowStart} -> count, with a TTL of two windows.
+    Plan limits live in a config table cached by each gateway for 60 s: api_key -> limit_per_minute.
+  architecture: |
+    flowchart LR
+      client --> lb[Load balancer]
+      lb --> gw[Gateway nodes x50]
+      gw --> rl[Rate limit check]
+      rl --> redis[(Redis primary + replica)]
+      gw --> svc[Backend services]
+    Counters must be shared in Redis: with local counters each of the 50 nodes would allow 1,000, so a key could make 50,000 requests a minute.
+  deep_dive: |
+    Algorithm: a sliding window counter. I keep the counts for the current and previous minute and estimate the rate as current + previous x (fraction of the previous window still inside the last 60 s). It smooths the burst at window edges that a fixed window allows (2x the limit across a boundary), uses two counters per key instead of the log of timestamps that a sliding window log needs, and is simpler to reason about than a token bucket for a per-minute quota.
+    Atomicity: the check and the increment run in one Lua script in Redis (read both counters, compute the estimate, INCR and set EXPIRE only if allowed), so two concurrent requests cannot both take the last slot.
+  scale_failure: |
+    If Redis is down or slower than 5 ms, the gateway fails open: the request is allowed and a metric is raised. This is a public API where wrongly rejecting paying customers is worse than briefly over-serving, and backends have their own capacity protection. Redis has a replica with automatic failover, and keys are spread by hashing if we outgrow one node. Alerts fire on Redis latency and fail-open rate.
+  tradeoffs: |
+    To cut Redis round trips for very hot keys, a gateway can batch locally: count requests in memory and flush increments every 100 ms, accepting a small overshoot in exchange for far fewer Redis calls.
+    Fail open trades exact enforcement for availability, as above.
+    Sliding window counter is approximate; a sliding log would be exact but would cost memory per request.

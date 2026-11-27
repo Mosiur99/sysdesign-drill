@@ -1,0 +1,34 @@
+problem: payment-ledger
+level: strong
+band: [75, 100]
+sections:
+  requirements: |
+    Top up from card, peer-to-peer transfer, withdraw to bank. Every movement recorded; balances never wrong and never negative; every request safe to retry.
+    External providers are slow and can time out with an unknown outcome, so money can be in flight. Correctness beats availability for the ledger.
+  estimation: |
+    Assume 10M users, 2M money movements a day, about 25/s average and 200/s peak. Each movement writes 2-4 ledger entries of about 200 bytes: under 2 GB/day, so a single well-provisioned Postgres primary handles it for years.
+  api: |
+    POST /transfers, /topups, /withdrawals all require an Idempotency-Key header. The server stores the key with the request hash and the result; a retry with the same key returns the original result (or 409 if the body differs).
+    Responses return a status: COMPLETED, PENDING or FAILED, and GET /operations/{id} returns the current state.
+  data_model: |
+    Double-entry: accounts(id, owner, type: user | provider_clearing | fees, balance), transactions(id, idempotency_key unique, type, status), entries(id, transaction_id, account_id, amount signed) - immutable, and the entries of each transaction sum to zero.
+    The balance column is a cached sum of entries, updated in the same database transaction, and audited nightly against the sum of entries.
+  architecture: |
+    flowchart LR
+      app --> api[Payments API]
+      api --> ledger[Ledger service]
+      ledger --> pg[(Postgres ledger)]
+      ledger --> outbox[(Outbox table)]
+      outbox --> relay[Outbox relay]
+      relay --> kafka[(Kafka)]
+      api --> psp[Card / bank provider adapters]
+      psp --> webhooks[Webhook receiver]
+    Ledger events are written to an outbox table in the same transaction as the entries and published by a relay, so downstream services never see events for rolled-back transactions.
+  deep_dive: |
+    Unknown outcomes: a top-up first creates a PENDING transaction moving money into a provider clearing account, then calls the provider. On success the transaction completes; on a timeout it stays PENDING and we poll the provider's status API and listen for its webhook. We never guess success or failure. Anything still pending after the provider's window goes to reconciliation.
+    No overdraft: a transfer runs in one database transaction that updates the sender with UPDATE accounts SET balance = balance - :amount WHERE id = :id AND balance >= :amount. If no row is updated the transfer fails, so two concurrent transfers cannot overdraw the account.
+  scale_failure: |
+    Daily reconciliation matches our provider clearing accounts against each provider's settlement report; mismatches open a case for operations and are fixed with compensating entries, never by editing entries. Postgres runs with synchronous replication to a standby in another zone. If a provider is down, new operations fail fast or stay pending; the ledger itself stays consistent.
+  tradeoffs: |
+    Strong consistency in a single relational database instead of a distributed store: during a primary failover we reject payments for a minute, but balances can never diverge, which matters more for money than availability.
+    Cached balances make reads fast at the cost of keeping them in sync in the same transaction.

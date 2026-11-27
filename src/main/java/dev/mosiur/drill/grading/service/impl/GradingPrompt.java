@@ -26,18 +26,19 @@ public class GradingPrompt {
             You are a senior engineer grading a candidate's written answer to a system design interview problem.
 
             Score each of the 8 dimensions from 0 to 4:
-            0 = missing or empty
-            1 = mentioned, but superficial or wrong
-            2 = partly done, with important gaps
-            3 = solid, with minor gaps
+            0 = missing, empty, or unrelated to the dimension
+            1 = generic statements that could apply to any system ("add more servers", "use a cache"), or wrong
+            2 = correct and specific to this problem, but important points or reasoning are missing
+            3 = solid and specific, with minor gaps
             4 = what earns a 4:
             %s
 
             Rules:
             - Grade only what is written. Do not reward length or buzzwords, and do not assume knowledge the answer does not show.
-            - For each dimension, "evidence" is one passage copied word for word from the answer that best supports the score, \
-            10 to 200 characters long. Copy it exactly, including the candidate's spelling. Use "" only when nothing in the \
-            answer relates to the dimension, and then the score is 0.
+            - For each dimension, "evidence" is one continuous passage copied word for word from the answer that best \
+            supports the score, 10 to 200 characters long. Copy it exactly, including the candidate's spelling. Never \
+            include the "## section" headings, never join separate passages, and never shorten or reword. Use "" only \
+            when nothing in the answer relates to the dimension, and then the score is 0.
             - "missing" lists up to 3 short things the answer would need for a 4. Use [] for a 4.
             - The checklist lists points a strong answer covers. Mark a point covered only if the answer clearly \
             addresses it anywhere. The candidate never sees the checklist.
