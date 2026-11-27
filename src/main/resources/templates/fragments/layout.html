@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' · sysdesign drill'">sysdesign drill</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<header th:fragment="header(active)" class="site-header">
+    <nav aria-label="Main" class="site-nav">
+        <a class="brand" th:href="@{/}">sysdesign drill</a>
+        <div class="nav-links">
+            <a th:href="@{/}" th:attr="aria-current=${active == 'today'} ? 'page'">Today</a>
+            <a th:href="@{/problems}" th:attr="aria-current=${active == 'problems'} ? 'page'">Problems</a>
+        </div>
+    </nav>
+</header>
+
+<span th:fragment="difficulty(level)" th:switch="${level}" class="difficulty"
+      th:classappend="'difficulty-' + ${level}">
+    <th:block th:case="1">Easy</th:block>
+    <th:block th:case="2">Medium</th:block>
+    <th:block th:case="3">Hard</th:block>
+</span>
+</body>
+</html>

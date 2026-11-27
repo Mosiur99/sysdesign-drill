@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Today')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('today')}"></header>
+<main class="page">
+    <section th:if="${drill}" class="today" aria-labelledby="problem-title">
+        <p class="meta" th:text="${#temporals.format(drill.day, 'EEEE, d MMMM', #locale.ENGLISH)}">Friday, 27 November</p>
+        <div class="stack-tight">
+            <p class="meta">
+                <span th:text="${drill.kind.name() == 'RETRY'} ? 'Retry' : 'New problem'">New problem</span>
+                · <span th:replace="~{fragments/layout :: difficulty(${drill.difficulty})}"></span>
+                · <span th:text="${#strings.listJoin(drill.topics, ', ')}">messaging</span>
+            </p>
+            <h1 id="problem-title" th:text="${drill.title}">Design a notification service</h1>
+        </div>
+        <p class="prompt" th:text="${drill.prompt}">Prompt</p>
+        <p th:if="${drill.kind.name() == 'RETRY'}" class="note">
+            Your earlier answer and score stay hidden until you submit, so you answer fresh.
+        </p>
+        <div class="actions">
+            <a class="button" th:href="@{/drills/{id}(id=${drill.id})}">Start answer</a>
+            <span class="meta">45-minute timer starts when you open it. Drafts save as you type.</span>
+        </div>
+    </section>
+
+    <section th:unless="${drill}" class="today" aria-labelledby="empty-title">
+        <h1 id="empty-title">No problems in the bank</h1>
+        <p class="prompt">Add problem files under <code>src/main/resources/problems</code> and restart the app.</p>
+    </section>
+</main>
+</body>
+</html>

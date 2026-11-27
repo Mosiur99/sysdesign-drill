@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Problems')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('problems')}"></header>
+<main class="page page-wide">
+    <div class="stack-tight">
+        <h1>Problems</h1>
+        <p class="meta" th:text="${#lists.size(problems)} + ' problems, easiest first'">30 problems, easiest first</p>
+    </div>
+    <table class="problem-table">
+        <thead>
+        <tr>
+            <th scope="col">Problem</th>
+            <th scope="col">Difficulty</th>
+            <th scope="col">Topics</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="problem : ${problems}">
+            <td th:text="${problem.title}">Design a URL shortener</td>
+            <td><span th:replace="~{fragments/layout :: difficulty(${problem.difficulty})}"></span></td>
+            <td class="topics" th:text="${#strings.listJoin(problem.topics, ', ')}">storage, caching</td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>
