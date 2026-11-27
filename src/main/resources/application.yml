@@ -29,6 +29,17 @@ drill:
     read-timeout: 90s
     max-retry-after: 30s
     max-attempts: 3
+  telegram:
+    base-url: ${TELEGRAM_BASE_URL:https://api.telegram.org}
+    bot-token: ${TELEGRAM_BOT_TOKEN:}
+    chat-id: ${TELEGRAM_CHAT_ID:}
+    app-url: ${DRILL_APP_URL:http://localhost:8080}
+    timeout: 10s
+  notify:
+    daily-cron: ${DRILL_NOTIFY_DAILY_CRON:0 5 8 * * *}
+    reminder-cron: ${DRILL_NOTIFY_REMINDER_CRON:0 0 21 * * *}
+    weekly-cron: ${DRILL_NOTIFY_WEEKLY_CRON:0 0 20 * * SUN}
+    send-interval: PT15S
   auth:
     username: ${DRILL_USER:}
     password-hash: ${DRILL_PASSWORD_HASH:}

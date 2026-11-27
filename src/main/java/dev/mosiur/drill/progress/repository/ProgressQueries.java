@@ -68,6 +68,16 @@ public class ProgressQueries {
                 row.getBigDecimal(3))).stream().findFirst();
     }
 
+    public List<NextRetry> retriesDueBetween(LocalDate from, LocalDate to) {
+        return jdbc.query("""
+                select p.title, pp.next_due, pp.last_score
+                from problem_progress pp join problem p on p.id = pp.problem_id
+                where not pp.retired and p.active and pp.next_due between ? and ?
+                order by pp.next_due, p.title
+                """, (row, index) -> new NextRetry(row.getString(1), row.getObject(2, LocalDate.class),
+                row.getBigDecimal(3)), from, to);
+    }
+
     private Map<Long, Set<Topic>> topicsByProblem(boolean activeOnly) {
         Map<Long, Set<Topic>> topics = new HashMap<>();
         jdbc.query("select pt.problem_id, pt.topic from problem_topic pt join problem p on p.id = pt.problem_id"

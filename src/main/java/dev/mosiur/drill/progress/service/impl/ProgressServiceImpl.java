@@ -12,6 +12,7 @@ import dev.mosiur.drill.progress.model.SkillTrend;
 import dev.mosiur.drill.progress.model.Streak;
 import dev.mosiur.drill.progress.model.TodaySummary;
 import dev.mosiur.drill.progress.model.TopicStrength;
+import dev.mosiur.drill.progress.model.WeeklyReport;
 import dev.mosiur.drill.progress.repository.ProgressQueries;
 import dev.mosiur.drill.progress.service.ProgressService;
 import org.springframework.stereotype.Service;
@@ -65,5 +66,20 @@ public class ProgressServiceImpl implements ProgressService {
     @Transactional(readOnly = true)
     public Streak streak() {
         return ProgressCalculator.streak(queries.submittedDays(), LocalDate.now(clock));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public WeeklyReport weekly() {
+        LocalDate today = LocalDate.now(clock);
+        List<ScoredDrill> week = queries.scoredDrills().stream()
+                .filter(drill -> drill.day().isAfter(today.minusDays(7)))
+                .toList();
+        List<TopicStrength> tried = ProgressCalculator.topics(queries.scoredDrills(), queries.activeTopics()).stream()
+                .filter(TopicStrength::tried)
+                .toList();
+        return new WeeklyReport(week.size(), ProgressCalculator.averageScore(week), streak(),
+                ProgressCalculator.skills(week), tried.isEmpty() ? null : tried.getLast(),
+                tried.isEmpty() ? null : tried.getFirst(), queries.retriesDueBetween(today.plusDays(1), today.plusDays(7)));
     }
 }

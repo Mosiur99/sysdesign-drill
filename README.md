@@ -21,6 +21,8 @@ docker compose up -d
 
 Grading uses Groq (`openai/gpt-oss-120b`). Put the key in `.env` (git-ignored) as `GROQ_API_KEY=...`. Without it the app runs, but grading reports that the key is missing.
 
+Telegram messages (daily problem at 08:05, a reminder at 21:00 if today's drill is not submitted, and a weekly report on Sunday at 20:00) need `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in `.env`. Without them nothing is sent. Set `DRILL_APP_URL` to the public address so the links in messages work.
+
 Open http://localhost:8080 and sign in. Set `DRILL_SECURE_COOKIE=true` when the app is served over HTTPS.
 
 ## Test
