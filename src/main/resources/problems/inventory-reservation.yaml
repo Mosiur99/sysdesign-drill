@@ -1,0 +1,28 @@
+slug: inventory-reservation
+title: Design inventory for an online store
+difficulty: 2
+topics: [consistency, payments]
+prompt: |
+  An online store sells 2 million products from 20 warehouses. Shoppers see whether an item
+  is in stock, add it to the cart and check out. During flash sales thousands of people buy
+  the same item at once. The store must not sell more units than it has, and unpaid orders
+  should give their stock back.
+key_points:
+  - id: reserve-on-checkout
+    dimension: deep_dive
+    text: Reserves stock at checkout (not add-to-cart) with an expiry, and confirms or releases it when payment succeeds or fails
+  - id: atomic-decrement
+    dimension: deep_dive
+    text: Decrements with a conditional update (UPDATE ... SET available = available - n WHERE available >= n) so concurrent buyers cannot oversell
+  - id: stock-model
+    dimension: data_model
+    text: Tracks on-hand, reserved and available per product per warehouse, with an append-only movement log for audits
+  - id: display-cache
+    dimension: architecture
+    text: Shows cached, approximate stock on product pages while the checkout path reads the source of truth
+  - id: hot-sku
+    dimension: scale_failure
+    text: Handles a hot product in a flash sale (split stock into buckets, queue requests, or pre-allocate tokens)
+  - id: saga
+    dimension: tradeoffs
+    text: Coordinates order, payment and inventory with a saga and compensations instead of a distributed transaction

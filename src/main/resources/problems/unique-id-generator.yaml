@@ -1,0 +1,24 @@
+slug: unique-id-generator
+title: Design a unique ID generator
+difficulty: 1
+topics: [id-generation, consistency]
+prompt: |
+  Many services need unique 64-bit ids for new records, about 200,000 ids a second in total
+  across several data centres. Ids should be roughly sortable by creation time so that
+  "newest first" queries stay cheap. A central database sequence is too slow and a single point of failure.
+key_points:
+  - id: snowflake-layout
+    dimension: deep_dive
+    text: Splits the 64 bits into timestamp, machine or worker id, and a per-millisecond sequence, and checks the bit budget against the stated rate
+  - id: worker-ids
+    dimension: architecture
+    text: Assigns worker ids without collisions (configuration, ZooKeeper or etcd lease, or a database row per node)
+  - id: clock-skew
+    dimension: scale_failure
+    text: Handles the clock moving backwards (wait, refuse, or use a logical clock) so ids are never reused
+  - id: uuid-compare
+    dimension: tradeoffs
+    text: Compares with UUIDv4 or UUIDv7 and with database ranges, covering size, ordering and index locality
+  - id: rate-check
+    dimension: estimation
+    text: Shows the per-node sequence bits cover peak ids per millisecond and the timestamp bits last for decades

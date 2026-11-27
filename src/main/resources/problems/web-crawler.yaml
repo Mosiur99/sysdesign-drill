@@ -1,0 +1,27 @@
+slug: web-crawler
+title: Design a web crawler
+difficulty: 2
+topics: [scheduling, storage]
+prompt: |
+  Crawl 1 billion web pages a month to feed a search index. Revisit pages that change often
+  more frequently than pages that rarely change. Be polite: respect robots.txt and never
+  overload a single website. Store the page content for the indexing team.
+key_points:
+  - id: frontier
+    dimension: architecture
+    text: Uses a URL frontier with priority queues and per-host queues so each host is fetched by one worker at a limited rate
+  - id: dedup
+    dimension: deep_dive
+    text: Deduplicates URLs (normalisation plus a seen set or Bloom filter) and near-duplicate content (fingerprints such as SimHash)
+  - id: politeness
+    dimension: requirements
+    text: Caches robots.txt per host, honours crawl delays, and sets an identifying user agent
+  - id: crawl-rate
+    dimension: estimation
+    text: Converts 1 billion pages a month into about 400 pages a second and estimates storage for page content
+  - id: traps
+    dimension: scale_failure
+    text: Defends against crawler traps (infinite calendars, session ids in URLs) with depth and per-host page limits
+  - id: recrawl
+    dimension: tradeoffs
+    text: Schedules recrawls from observed change frequency rather than a fixed interval for every page

@@ -1,0 +1,30 @@
+slug: ad-click-aggregation
+title: Design real-time ad click aggregation
+difficulty: 3
+topics: [streaming, consistency, storage]
+prompt: |
+  An ad network records 1 billion ad clicks a day. Advertisers want click counts per ad per
+  minute within a minute of real time, and the final daily numbers are used for billing,
+  so they must be exact. Clicks can arrive late or be duplicated by retries.
+key_points:
+  - id: stream-processing
+    dimension: architecture
+    text: Puts click events on a durable log and aggregates them with a stream processor into per-ad, per-minute windows
+  - id: event-time
+    dimension: deep_dive
+    text: Windows by event time with watermarks and allowed lateness, not by arrival time
+  - id: dedup
+    dimension: deep_dive
+    text: Deduplicates clicks by click id within a window and gets exactly-once results through checkpointed state with idempotent or transactional sinks
+  - id: reconciliation
+    dimension: scale_failure
+    text: Runs a batch job over raw events to produce the billing numbers and to correct the real-time counts
+  - id: raw-retention
+    dimension: data_model
+    text: Keeps raw click events in cheap storage so aggregates can be recomputed after bugs
+  - id: hot-ads
+    dimension: scale_failure
+    text: Handles very hot ads by pre-aggregating per partition before a final merge
+  - id: fraud
+    dimension: requirements
+    text: Mentions filtering invalid or fraudulent clicks before they count toward billing

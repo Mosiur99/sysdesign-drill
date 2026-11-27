@@ -1,0 +1,27 @@
+slug: video-streaming
+title: Design a video upload and streaming platform
+difficulty: 2
+topics: [streaming, storage, caching]
+prompt: |
+  Creators upload videos of up to 4 hours. Viewers watch on phones, TVs and laptops over
+  connections that range from poor to excellent. There are 5 million uploads a day and
+  1 billion views a day, and playback should start in under 2 seconds.
+key_points:
+  - id: transcode-pipeline
+    dimension: architecture
+    text: Stores the original, then transcodes asynchronously through a queue into several resolutions and bitrates, split into segments processed in parallel
+  - id: adaptive-bitrate
+    dimension: deep_dive
+    text: Serves adaptive bitrate streaming (HLS or DASH manifests with short segments) so the player switches quality with bandwidth
+  - id: cdn
+    dimension: scale_failure
+    text: Serves segments from a CDN, keeping origin traffic for the long tail, and pre-warms popular videos
+  - id: upload-flow
+    dimension: api
+    text: Uploads directly to object storage with pre-signed URLs and resumable multipart upload, not through the app servers
+  - id: egress-estimate
+    dimension: estimation
+    text: Estimates egress bandwidth from views, average watch time and bitrate, and shows it dominates cost
+  - id: storage-cost
+    dimension: tradeoffs
+    text: Weighs storing every rendition against transcoding rarely watched videos on demand

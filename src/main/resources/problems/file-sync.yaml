@@ -1,0 +1,28 @@
+slug: file-sync
+title: Design a file storage and sync service
+difficulty: 2
+topics: [storage, consistency]
+prompt: |
+  Users keep a folder in sync across their laptop, phone and the web. Files range from a few
+  kilobytes to several gigabytes. Edits on one device should show up on the others within seconds,
+  uploads must survive flaky connections, and users can restore older versions of a file.
+  Plan for 50 million users with 10 GB stored each on average.
+key_points:
+  - id: chunking
+    dimension: deep_dive
+    text: Splits files into chunks addressed by content hash so only changed chunks upload and identical chunks are stored once
+  - id: metadata-blob-split
+    dimension: architecture
+    text: Separates the metadata service (files, versions, chunk lists in a database) from blob storage (object store) for the chunks
+  - id: resumable-upload
+    dimension: api
+    text: Supports resumable uploads, for example by asking which chunks the server is missing before sending
+  - id: change-notify
+    dimension: architecture
+    text: Notifies other devices of changes through long polling or a push channel, then they fetch the new version's metadata
+  - id: conflicts
+    dimension: tradeoffs
+    text: Detects conflicting edits with a version number on each file and keeps both copies instead of silently overwriting
+  - id: storage-estimate
+    dimension: estimation
+    text: Estimates raw storage (about 500 PB before deduplication and replication) and why an object store is needed

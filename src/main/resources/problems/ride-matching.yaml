@@ -1,0 +1,27 @@
+slug: ride-matching
+title: Design ride matching for a ride-hailing app
+difficulty: 3
+topics: [geo, real-time, consistency]
+prompt: |
+  Riders request a ride and should be matched with a nearby available driver within a few seconds.
+  There are 1 million active drivers at peak, each sending a GPS update every 4 seconds.
+  A driver must never be assigned to two riders at once. Riders see their driver move on the map.
+key_points:
+  - id: location-ingest
+    dimension: estimation
+    text: Estimates location update load (about 250,000 writes a second) and keeps current positions in memory, not in the main database
+  - id: geo-index
+    dimension: data_model
+    text: Indexes driver positions with a geo grid (geohash, S2 or H3 cells) so nearby search checks a few cells
+  - id: city-partition
+    dimension: scale_failure
+    text: Partitions by city or region since matching is local, which also limits the blast radius of failures
+  - id: exclusive-assign
+    dimension: deep_dive
+    text: Assigns a driver atomically (compare-and-set on driver state or a lock with timeout) and handles the driver declining or not answering
+  - id: matching-strategy
+    dimension: tradeoffs
+    text: Compares nearest-driver greedy matching with short batching windows that optimise many matches together
+  - id: trip-updates
+    dimension: architecture
+    text: Pushes driver location to the rider through a persistent connection for the active trip only

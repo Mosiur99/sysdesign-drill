@@ -1,0 +1,31 @@
+slug: distributed-log
+title: Design a distributed message log
+difficulty: 3
+topics: [messaging, storage, consistency]
+prompt: |
+  Design a durable, partitioned message log in the style of an event streaming platform.
+  Producers append messages to named topics; many independent consumer groups read them
+  at their own pace and can replay from any point within 7 days. It must handle 2 GB/s of writes
+  and survive the loss of any single machine without losing acknowledged messages.
+key_points:
+  - id: partitioned-log
+    dimension: data_model
+    text: Splits each topic into partitions that are append-only segment files with an offset index, and orders messages only within a partition
+  - id: replication
+    dimension: deep_dive
+    text: Replicates each partition to followers with a leader, an in-sync replica set, and acknowledges only after enough replicas have the write
+  - id: consumer-offsets
+    dimension: architecture
+    text: Lets consumer groups track their own offsets, so reading does not delete data and replay is a seek
+  - id: leader-failover
+    dimension: scale_failure
+    text: Elects a new leader from in-sync replicas through a controller or consensus, avoiding unclean elections that lose data
+  - id: sequential-io
+    dimension: deep_dive
+    text: Explains why sequential disk writes, page cache and zero-copy sends make high throughput possible
+  - id: key-partitioning
+    dimension: tradeoffs
+    text: Discusses partition count and keying, since more partitions add parallelism but hot keys and rebalancing cost more
+  - id: throughput-estimate
+    dimension: estimation
+    text: Sizes brokers and disks from 2 GB/s writes times replication factor times 7 days of retention

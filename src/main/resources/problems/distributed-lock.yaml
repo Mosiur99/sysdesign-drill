@@ -1,0 +1,27 @@
+slug: distributed-lock
+title: Design a distributed lock service
+difficulty: 2
+topics: [consistency]
+prompt: |
+  Several services need mutual exclusion across machines, for example only one instance may
+  process a given customer's monthly invoice at a time. Locks must be released if the holder
+  crashes, and a holder that freezes for a while must not corrupt data when it wakes up.
+key_points:
+  - id: lease
+    dimension: deep_dive
+    text: Uses leases with a time-to-live plus renewal, so a crashed holder's lock expires
+  - id: fencing-token
+    dimension: deep_dive
+    text: Issues a monotonically increasing fencing token with each lock, and the protected resource rejects writes with older tokens
+  - id: consensus-store
+    dimension: architecture
+    text: Builds on a consensus-backed store (etcd, ZooKeeper, or a database) rather than a single Redis node
+  - id: pause-problem
+    dimension: scale_failure
+    text: Explains that GC pauses or network delays can let a lease expire while the old holder still believes it owns the lock
+  - id: lock-api
+    dimension: api
+    text: Defines acquire with timeout, renew, and release where release only works for the current owner token
+  - id: avoid-lock
+    dimension: tradeoffs
+    text: Mentions alternatives that avoid a lock, such as partitioning work by key or idempotent operations with conditional writes

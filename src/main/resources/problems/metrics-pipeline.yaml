@@ -1,0 +1,30 @@
+slug: metrics-pipeline
+title: Design a metrics monitoring system
+difficulty: 2
+topics: [observability, streaming, storage]
+prompt: |
+  10,000 servers each report about 500 metrics every 10 seconds (CPU, request latency, error counts).
+  Engineers view dashboards over the last hour or the last year, and alerts must fire within a
+  minute of a threshold being crossed. Build the collection, storage, query and alerting parts.
+key_points:
+  - id: ingest-rate
+    dimension: estimation
+    text: Works out about 500,000 data points a second and the daily storage before compression
+  - id: time-series-store
+    dimension: data_model
+    text: Uses a time-series layout keyed by metric name plus labels, with compression such as delta-of-delta timestamps and XOR values
+  - id: downsampling
+    dimension: deep_dive
+    text: Keeps raw data for days and downsampled rollups (1 minute, 1 hour) for long ranges, with a retention policy per level
+  - id: buffer
+    dimension: architecture
+    text: Puts a buffer such as Kafka between collectors and storage so ingestion survives storage slowdowns
+  - id: cardinality
+    dimension: scale_failure
+    text: Guards against label cardinality explosions (user id as a label) that blow up memory and index size
+  - id: push-pull
+    dimension: tradeoffs
+    text: Compares pull-based scraping with push-based reporting and picks one for this fleet
+  - id: alert-eval
+    dimension: architecture
+    text: Evaluates alert rules on a schedule over recent data, with deduplication and routing to on-call
