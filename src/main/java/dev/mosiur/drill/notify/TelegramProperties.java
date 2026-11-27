@@ -10,7 +10,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("drill.telegram")
 public record TelegramProperties(@NotBlank String baseUrl, String botToken, String chatId, @NotBlank String appUrl,
-                                 @NotNull Duration timeout) {
+                                 String tunnelMetricsUrl, @NotNull Duration timeout) {
 
     public boolean isConfigured() {
         return botToken != null && !botToken.isBlank() && chatId != null && !chatId.isBlank();

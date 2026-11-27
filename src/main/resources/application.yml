@@ -34,6 +34,7 @@ drill:
     bot-token: ${TELEGRAM_BOT_TOKEN:}
     chat-id: ${TELEGRAM_CHAT_ID:}
     app-url: ${DRILL_APP_URL:http://localhost:8080}
+    tunnel-metrics-url: ${DRILL_TUNNEL_METRICS_URL:}
     timeout: 10s
   notify:
     daily-cron: ${DRILL_NOTIFY_DAILY_CRON:0 5 8 * * *}
@@ -45,6 +46,7 @@ drill:
     password-hash: ${DRILL_PASSWORD_HASH:}
 
 server:
+  forward-headers-strategy: ${DRILL_FORWARD_HEADERS:none}
   servlet:
     session:
       cookie:
@@ -60,7 +62,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: health, prometheus
   endpoint:
     health:
       show-details: when-authorized

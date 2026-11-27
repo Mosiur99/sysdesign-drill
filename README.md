@@ -2,11 +2,61 @@
 
 A daily system design practice app. Every morning it picks one problem, you write a structured answer against a 45-minute timer, and an LLM grades it against a fixed rubric and a hidden checklist of key points. Weak topics and low scores come back as spaced retries.
 
-Work in progress. Built step by step.
-
 ## Stack
 
-Java 25, Spring Boot 4, PostgreSQL 17, Flyway, Spring Security, Thymeleaf, htmx, Mermaid, Testcontainers, Playwright.
+Java 25, Spring Boot 4, PostgreSQL 17, Flyway, Spring Security, Thymeleaf, htmx, Mermaid, Groq, Telegram Bot API, Docker Compose, Cloudflare Tunnel, Testcontainers, WireMock, Playwright.
+
+## How it works
+
+```mermaid
+flowchart LR
+  phone[Phone or laptop] -->|HTTPS| cf[Cloudflare quick tunnel]
+  cf --> app[Spring Boot app]
+  app --> db[(PostgreSQL)]
+  app -->|strict JSON schema| groq[Groq: gpt-oss-120b]
+  app -->|outbox| tg[Telegram bot]
+  tg --> phone
+```
+
+| Package | What it does |
+|---|---|
+| `problem` | 30 problems with hidden checklists, loaded from YAML at start-up |
+| `drill` | Daily pick: due retries first, then the weakest topic at a difficulty that follows recent scores |
+| `answer` | Eight-section editor with autosave, timer and Mermaid preview; submit locks the answer |
+| `grading` | Rubric prompt, quote-checked validation, background worker, follow-up round |
+| `llm` | Groq client: strict schema output, retries on 429 and 5xx, timeouts, usage logging |
+| `progress` | Spaced retries (3, 10 or 30 days), streak, section trends and topic strength |
+| `notify` | Telegram outbox: daily problem, reminder, weekly report, new-address message |
+
+```mermaid
+sequenceDiagram
+  participant S as 08:00 scheduler
+  participant P as Picker
+  participant U as You
+  participant G as Grader
+  participant L as Groq
+  S->>P: pick today's problem
+  P-->>U: Telegram: today's problem and link
+  U->>G: submit 8 sections
+  G->>L: rubric + checklist + answer
+  L-->>G: scores with quotes
+  G->>G: check every quote against the answer
+  G-->>U: result page, 2 follow-up questions
+  U->>G: follow-up answers (optional)
+  G-->>U: final score, retry date
+```
+
+## Run it for real
+
+The `app` profile runs the app, PostgreSQL and a Cloudflare quick tunnel on this machine. The quick tunnel needs no Cloudflare account and gives a free `https://<random>.trycloudflare.com` address. The address changes when the tunnel restarts, so the app asks the tunnel for its current address and sends every new one to Telegram. All three containers restart on their own after a reboot.
+
+```bash
+./mvnw verify
+docker compose --profile app up -d --build
+docker compose logs tunnel | grep trycloudflare
+```
+
+`.env` holds `DRILL_USER`, `DRILL_PASSWORD_HASH` (BCrypt, in single quotes because of the `$` signs), `GROQ_API_KEY`, `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`. PostgreSQL and the app listen only on 127.0.0.1; the tunnel is the only way in from outside. Prometheus metrics are at `/actuator/prometheus` after signing in.
 
 ## Run locally
 

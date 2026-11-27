@@ -72,6 +72,14 @@ final class MessageFormatter {
         return text.append("\n<a href=\"").append(link(appUrl, "/progress")).append("\">Open progress</a>").toString();
     }
 
+    static String address(String url) {
+        return """
+                <b>New address</b>
+                sysdesign drill is now at %s
+                The address changes when this computer restarts; the newest one always arrives here."""
+                .formatted(escape(url));
+    }
+
     private static String section(SkillTrend skill) {
         return escape(skill.title()) + " " + skill.averageText();
     }

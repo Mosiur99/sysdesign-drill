@@ -69,6 +69,12 @@ class MessageFormatterTest {
     }
 
     @Test
+    void addressMessageCarriesThePlainLinkSoTelegramLinksIt() {
+        assertThat(MessageFormatter.address("https://calm-river-1234.trycloudflare.com"))
+                .contains("sysdesign drill is now at https://calm-river-1234.trycloudflare.com");
+    }
+
+    @Test
     void quietWeekStillSendsTheStreak() {
         String text = MessageFormatter.weekly(new WeeklyReport(0, null, new Streak(0, 3), List.of(), null, null,
                 List.of()), "http://localhost:8080");

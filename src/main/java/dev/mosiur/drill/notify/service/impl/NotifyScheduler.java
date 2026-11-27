@@ -9,6 +9,7 @@ import dev.mosiur.drill.drill.service.DailyDrillService;
 import dev.mosiur.drill.notify.TelegramProperties;
 import dev.mosiur.drill.notify.domain.NotificationKind;
 import dev.mosiur.drill.notify.repository.NotificationRepository;
+import dev.mosiur.drill.notify.service.AppUrl;
 import dev.mosiur.drill.progress.service.ProgressService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +26,12 @@ public class NotifyScheduler {
     private final NotificationRepository notifications;
     private final TelegramProperties telegram;
     private final Clock clock;
+    private final AppUrl appUrl;
 
     public NotifyScheduler(DailyDrillService dailyDrills, ProgressService progress,
-                           NotificationRepository notifications, TelegramProperties telegram, Clock clock) {
+                           NotificationRepository notifications, TelegramProperties telegram, Clock clock,
+                           AppUrl appUrl) {
+        this.appUrl = appUrl;
         this.dailyDrills = dailyDrills;
         this.progress = progress;
         this.notifications = notifications;
@@ -39,7 +43,7 @@ public class NotifyScheduler {
     public void daily() {
         if (enabled()) {
             dailyDrills.assignToday().ifPresent(drill -> enqueue(NotificationKind.DAILY, "daily:" + drill.day(),
-                    MessageFormatter.daily(drill, telegram.appUrl())));
+                    MessageFormatter.daily(drill, appUrl.current())));
         }
     }
 
@@ -49,7 +53,7 @@ public class NotifyScheduler {
             dailyDrills.assignToday()
                     .filter(drill -> drill.status() == DrillStatus.ASSIGNED || drill.status() == DrillStatus.IN_PROGRESS)
                     .ifPresent(drill -> enqueue(NotificationKind.REMINDER, "reminder:" + drill.day(),
-                            MessageFormatter.reminder(drill, telegram.appUrl())));
+                            MessageFormatter.reminder(drill, appUrl.current())));
         }
     }
 
@@ -59,7 +63,15 @@ public class NotifyScheduler {
             LocalDate today = LocalDate.now(clock);
             String week = today.get(IsoFields.WEEK_BASED_YEAR) + "-W" + today.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);
             enqueue(NotificationKind.WEEKLY, "weekly:" + week,
-                    MessageFormatter.weekly(progress.weekly(), telegram.appUrl()));
+                    MessageFormatter.weekly(progress.weekly(), appUrl.current()));
+        }
+    }
+
+    @Scheduled(initialDelayString = "PT1M", fixedDelayString = "PT5M")
+    public void announceAddress() {
+        if (enabled()) {
+            appUrl.tunnel().ifPresent(url -> enqueue(NotificationKind.ADDRESS, "address:" + url,
+                    MessageFormatter.address(url)));
         }
     }
 

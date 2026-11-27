@@ -85,7 +85,7 @@ class TelegramClientImplTest {
         server.stubFor(post(PATH).willReturn(aResponse().withStatus(200).withFixedDelay(2_000)));
 
         SendResult result = new TelegramClientImpl(new TelegramProperties(server.baseUrl(), TOKEN, "42",
-                "http://localhost:8080", Duration.ofMillis(200)), RestClient.builder(), JsonMapper.builder().build())
+                "http://localhost:8080", null, Duration.ofMillis(200)), RestClient.builder(), JsonMapper.builder().build())
                 .send("x");
 
         assertThat(result.outcome()).isEqualTo(Outcome.RETRY);
@@ -93,7 +93,7 @@ class TelegramClientImplTest {
     }
 
     private TelegramClientImpl client(String token) {
-        return new TelegramClientImpl(new TelegramProperties(server.baseUrl(), token, "42", "http://localhost:8080",
+        return new TelegramClientImpl(new TelegramProperties(server.baseUrl(), token, "42", "http://localhost:8080", null,
                 Duration.ofSeconds(2)), RestClient.builder(), JsonMapper.builder().build());
     }
 }
