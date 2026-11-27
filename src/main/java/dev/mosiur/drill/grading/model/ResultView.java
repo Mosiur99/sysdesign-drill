@@ -7,7 +7,7 @@ import java.util.stream.IntStream;
 public record ResultView(long drillId, String title, LocalDate day, boolean retry, Integer minutes, int wordCount,
                          State state, Score score, String summary, List<String> improvements,
                          List<DimensionView> dimensions, List<ChecklistItem> checklist, List<FollowUpView> followUps,
-                         String failure) {
+                         String failure, LocalDate retryOn, boolean retired) {
 
     public enum State {
         NOT_SUBMITTED,

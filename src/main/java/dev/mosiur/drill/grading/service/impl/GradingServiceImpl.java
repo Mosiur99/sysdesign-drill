@@ -50,6 +50,8 @@ import dev.mosiur.drill.llm.service.LlmClient;
 import dev.mosiur.drill.llm.service.LlmException;
 import dev.mosiur.drill.problem.domain.Dimension;
 import dev.mosiur.drill.problem.domain.KeyPoint;
+import dev.mosiur.drill.progress.domain.ProblemProgress;
+import dev.mosiur.drill.progress.repository.ProblemProgressRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -74,10 +76,12 @@ public class GradingServiceImpl implements GradingService {
     private final TransactionTemplate transaction;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final ProblemProgressRepository progress;
 
     public GradingServiceImpl(DrillRepository drills, AnswerRepository answers, GradeRepository grades, LlmClient llm,
                               GradingPrompt prompt, GradeValidator validator, TransactionTemplate transaction,
-                              ApplicationEventPublisher events, Clock clock) {
+                              ApplicationEventPublisher events, Clock clock, ProblemProgressRepository progress) {
+        this.progress = progress;
         this.drills = drills;
         this.answers = answers;
         this.grades = grades;
@@ -137,15 +141,20 @@ public class GradingServiceImpl implements GradingService {
         if (state == State.NOT_SUBMITTED || state == State.GRADING || state == State.FAILED) {
             String failure = state == State.FAILED ? failureMessage(grade.orElseThrow().getFailureReason()) : null;
             return new ResultView(drillId, title, drill.getScheduledFor(), retry, minutes, words, state, null, null,
-                    List.of(), List.of(), List.of(), List.of(), failure);
+                    List.of(), List.of(), List.of(), List.of(), failure, null, false);
         }
         Grade graded = grade.orElseThrow();
+        Optional<ProblemProgress> problemProgress = state != State.DONE ? Optional.empty()
+                : progress.findById(drill.getProblem().getId())
+                        .filter(found -> drill.getScheduledFor().equals(found.getLastAttemptedOn()));
         String failure = state == State.FOLLOW_UP_FAILED
                 ? failureMessage(followUpGrade.orElseThrow().getFailureReason()) : null;
         return new ResultView(drillId, title, drill.getScheduledFor(), retry, minutes, words, state,
                 score(drill, graded, followUpGrade), graded.getSummary(), graded.getImprovements(),
                 dimensionViews(graded), checklist(drill, graded),
-                followUpViews(graded, followUpAnswer, followUpGrade), failure);
+                followUpViews(graded, followUpAnswer, followUpGrade), failure,
+                problemProgress.map(ProblemProgress::getNextDue).orElse(null),
+                problemProgress.map(ProblemProgress::isRetired).orElse(false));
     }
 
     private GradingInput load(long drillId) {

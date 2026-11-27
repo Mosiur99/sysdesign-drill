@@ -36,6 +36,13 @@ public interface DrillRepository extends JpaRepository<Drill, Long> {
             """)
     List<Long> findUngradedFollowUpsBefore(@Param("before") Instant before);
 
+    @Query("""
+            select d.id from Drill d
+            where d.scheduledFor < :day and d.status in (dev.mosiur.drill.drill.domain.DrillStatus.GRADED,
+                                                         dev.mosiur.drill.drill.domain.DrillStatus.FOLLOW_UP)
+            """)
+    List<Long> findUnfinishedBefore(@Param("day") LocalDate day);
+
     @Modifying
     @Query(value = """
             insert into drill (problem_id, scheduled_for, kind, status)

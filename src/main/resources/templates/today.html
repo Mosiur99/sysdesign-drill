@@ -34,6 +34,42 @@
         </div>
     </section>
 
+    <section th:if="${summary}" class="week" aria-labelledby="week-title">
+        <h2 id="week-title">This week</h2>
+        <div class="week-grid">
+            <div th:each="day : ${summary.week}" class="week-day">
+                <span class="week-label" th:classappend="${day.today} ? 'is-today'"
+                      th:text="${day.today} ? 'Today' : ${#temporals.format(day.day, 'EEE', #locale.ENGLISH)}">Mon</span>
+                <span th:if="${day.score != null}" class="week-cell has-score" th:text="${day.score}">71</span>
+                <span th:if="${day.pending()}" class="week-cell" title="Grading">…</span>
+                <span th:if="${day.score == null and !day.submitted and day.today}" class="week-cell is-todo">to do</span>
+                <span th:if="${day.score == null and !day.submitted and !day.today}" class="week-cell is-empty"
+                      aria-label="No drill">–</span>
+            </div>
+        </div>
+        <p class="meta">Scores out of 100. A day counts toward the streak once you submit.</p>
+    </section>
+
+    <section th:if="${summary != null and summary.hasFocus()}" class="focus" aria-labelledby="focus-title">
+        <h2 id="focus-title">Where to focus</h2>
+        <div class="focus-list">
+            <div th:if="${summary.weakestSkill != null}" class="focus-row">
+                <span>Weakest section: <strong th:text="${summary.weakestSkill.title}">Estimation</strong></span>
+                <span class="focus-value"
+                      th:text="${summary.weakestSkill.averageText()} + ' / 4 over the last 10'">1.6 / 4 over last 10</span>
+            </div>
+            <div th:if="${summary.weakestTopic != null}" class="focus-row">
+                <span>Weakest topic: <strong th:text="${summary.weakestTopic.name}">geo</strong></span>
+                <span class="focus-value" th:text="${summary.weakestTopic.tried()} ? 'average ' + ${summary.weakestTopic.average} : 'not tried yet'">not tried yet</span>
+            </div>
+            <div th:if="${summary.nextRetry != null}" class="focus-row">
+                <span>Next retry: <strong th:text="${summary.nextRetry.title}">Design a payment ledger</strong></span>
+                <span class="focus-value"
+                      th:text="${#temporals.format(summary.nextRetry.due, 'EEE d MMM', #locale.ENGLISH)} + ' · last score ' + ${summary.nextRetry.lastScoreRounded()}">Sun 30 Nov · last score 48</span>
+            </div>
+        </div>
+    </section>
+
     <section th:unless="${drill}" class="today" aria-labelledby="empty-title">
         <h1 id="empty-title">No problems in the bank</h1>
         <p class="prompt">Add problem files under <code>src/main/resources/problems</code> and restart the app.</p>

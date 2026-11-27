@@ -70,7 +70,7 @@ class GraderEval {
                 Duration.ofSeconds(5), Duration.ofSeconds(120), Duration.ofSeconds(30), 3);
         GradingServiceImpl grader = new GradingServiceImpl(null, null, null,
                 new LlmClientImpl(properties, RestClient.builder(), json), new GradingPrompt(json),
-                new GradeValidator(), null, null, Clock.systemUTC());
+                new GradeValidator(), null, null, Clock.systemUTC(), null);
         Map<String, ProblemDefinition> problems = new ProblemFileReaderImpl(new PathMatchingResourcePatternResolver(),
                 Validation.buildDefaultValidatorFactory().getValidator(), "classpath:problems/*.yaml")
                 .readAll().stream().collect(Collectors.toMap(ProblemDefinition::slug, Function.identity()));

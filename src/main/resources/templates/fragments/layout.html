@@ -18,8 +18,11 @@
         <a class="brand" th:href="@{/}">sysdesign drill</a>
         <div class="nav-links">
             <a th:href="@{/}" th:attr="aria-current=${active == 'today'} ? 'page'">Today</a>
+            <a th:href="@{/progress}" th:attr="aria-current=${active == 'progress'} ? 'page'">Progress</a>
             <a th:href="@{/problems}" th:attr="aria-current=${active == 'problems'} ? 'page'">Problems</a>
         </div>
+        <span th:if="${streak != null and streak > 0}" class="streak"
+              th:text="${streak} + '-day streak'">6-day streak</span>
         <form sec:authorize="isAuthenticated()" class="sign-out" th:action="@{/logout}" method="post">
             <button type="submit" class="link-button">Sign out</button>
         </form>

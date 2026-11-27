@@ -1,5 +1,6 @@
 package dev.mosiur.drill.grading.service.impl;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -15,6 +16,8 @@ import dev.mosiur.drill.answer.service.AnswerTooLongException;
 import dev.mosiur.drill.answer.service.DrillNotFoundException;
 import dev.mosiur.drill.drill.domain.Drill;
 import dev.mosiur.drill.drill.domain.DrillStatus;
+import dev.mosiur.drill.drill.model.DayStarted;
+import dev.mosiur.drill.drill.model.DrillFinished;
 import dev.mosiur.drill.drill.repository.DrillRepository;
 import dev.mosiur.drill.grading.domain.DimensionScore;
 import dev.mosiur.drill.grading.domain.FollowUp;
@@ -35,6 +38,7 @@ import dev.mosiur.drill.llm.service.LlmException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -97,15 +101,33 @@ public class FollowUpServiceImpl implements FollowUpService {
     @Override
     @Transactional
     public void skip(long drillId) {
-        Drill drill = locked(drillId);
+        if (!finishWithoutFollowUp(locked(drillId))) {
+            throw new FollowUpNotAllowedException(drillId, "finish");
+        }
+    }
+
+    @EventListener
+    public void onDayStarted(DayStarted event) {
+        drills.findUnfinishedBefore(event.day()).forEach(drillId -> finishWithoutFollowUp(locked(drillId)));
+    }
+
+    private boolean finishWithoutFollowUp(Drill drill) {
+        long drillId = drill.getId();
         boolean followUpFailed = drill.getStatus() == DrillStatus.FOLLOW_UP && followUpGrade(drillId)
                 .map(grade -> grade.getStatus() == GradeStatus.FAILED).orElse(false);
         Grade main = mainGrade(drillId).orElse(null);
         if (main == null || main.getStatus() != GradeStatus.OK
                 || (drill.getStatus() != DrillStatus.GRADED && !followUpFailed)) {
-            throw new FollowUpNotAllowedException(drillId, "finish");
+            return false;
         }
-        drill.finish(main.getOverall());
+        finish(drill, main.getOverall());
+        return true;
+    }
+
+    private void finish(Drill drill, BigDecimal finalScore) {
+        drill.finish(finalScore);
+        events.publishEvent(new DrillFinished(drill.getId(), drill.getProblem().getId(), drill.getScheduledFor(),
+                finalScore));
     }
 
     @Override
@@ -202,7 +224,7 @@ public class FollowUpServiceImpl implements FollowUpService {
         grades.save(grade);
         if (grade.getStatus() == GradeStatus.OK) {
             Grade main = mainGrade(drillId).orElseThrow();
-            drill.finish(FollowUpScore.finalScore(main.getOverall(), grade.getBonus()));
+            finish(drill, FollowUpScore.finalScore(main.getOverall(), grade.getBonus()));
         }
     }
 

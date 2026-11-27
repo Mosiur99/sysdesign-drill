@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Progress')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('progress')}"></header>
+<main class="page page-progress">
+    <section class="stack">
+        <h1>Progress</h1>
+        <p th:if="${progress.drillCount > 0}" class="prompt">
+            <strong th:text="${progress.drillCount} + (${progress.drillCount == 1} ? ' drill' : ' drills')">19 drills</strong>
+            since <span th:text="${#temporals.format(progress.since, 'd MMMM', #locale.ENGLISH)}">9 November</span>.
+            Average score <strong th:text="${progress.recentAverage}">64</strong>
+            <th:block th:if="${progress.earlyAverage != null}">over the last 10, up from <strong
+                    th:text="${progress.earlyAverage}">52</strong> over the first 10</th:block><th:block
+                th:if="${progress.earlyAverage == null}">so far</th:block>.
+            Longest streak <span th:text="${progress.streak.longest} + (${progress.streak.longest == 1} ? ' day' : ' days')">9 days</span>.
+        </p>
+    </section>
+
+    <section th:unless="${progress.hasTrends()}" class="status-panel" aria-labelledby="empty-title">
+        <h2 id="empty-title">Trends start after 3 drills</h2>
+        <p th:text="'You have finished ' + ${progress.drillCount} + ' so far. Section and topic charts appear once there are 3 graded answers to compare.'">
+            You have finished 1 so far.</p>
+        <a th:href="@{/}">Go to today's problem</a>
+    </section>
+
+    <th:block th:if="${progress.hasTrends()}">
+        <section class="skills" aria-labelledby="skills-title">
+            <div class="section-head">
+                <h2 id="skills-title">Sections</h2>
+                <span class="meta">Average of the last 10 drills, out of 4 · trend over recent drills</span>
+            </div>
+            <div th:each="skill : ${progress.skills}" class="skill-row">
+                <span class="skill-name" th:text="${skill.title}">Architecture</span>
+                <svg class="sparkline" width="160" height="32" viewBox="0 0 160 32" role="img"
+                     th:attr="aria-label=${skill.label()}">
+                    <polyline th:attr="points=${skill.points}" fill="none" stroke="currentColor" stroke-width="2"
+                              stroke-linejoin="round" stroke-linecap="round"></polyline>
+                </svg>
+                <span class="skill-average" th:text="${skill.averageText()}">3.1</span>
+                <span class="skill-delta" th:classappend="${skill.falling()} ? 'is-falling'"
+                      th:text="${skill.deltaText()}">+0.6</span>
+            </div>
+        </section>
+
+        <section class="topics" aria-labelledby="topics-title">
+            <div class="section-head">
+                <h2 id="topics-title">Topics</h2>
+                <span class="meta">Weakest first. Untried topics are picked first.</span>
+            </div>
+            <table class="topic-table">
+                <thead>
+                <tr>
+                    <th scope="col">Topic</th>
+                    <th scope="col" class="numeric">Drills</th>
+                    <th scope="col">Average score</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="topic : ${progress.topics}">
+                    <td th:text="${topic.name}">geo</td>
+                    <td class="numeric" th:text="${topic.drills}">0</td>
+                    <td>
+                        <span class="topic-bar">
+                            <span class="bar"><span th:if="${topic.tried()}"
+                                                    th:style="'width:' + ${topic.average} + '%'"></span></span>
+                            <span class="topic-score" th:classappend="${!topic.tried()} ? 'is-untried'"
+                                  th:text="${topic.tried()} ? ${topic.average} : 'not tried'">not tried</span>
+                        </span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+    </th:block>
+
+    <section th:if="${!#lists.isEmpty(progress.recent)}" class="history" aria-labelledby="history-title">
+        <h2 id="history-title">Recent drills</h2>
+        <a th:each="drill : ${progress.recent}" class="history-row"
+           th:href="@{/drills/{id}/result(id=${drill.drillId})}">
+            <span class="history-date" th:text="${#temporals.format(drill.day, 'EEE d MMM', #locale.ENGLISH)}">Fri 27 Nov</span>
+            <span class="history-title" th:text="${drill.title}">Design a notification service</span>
+            <span class="history-kind" th:text="${drill.retry} ? 'Retry' : 'New'">New</span>
+            <span class="history-score" th:text="${drill.score}">68</span>
+        </a>
+    </section>
+</main>
+</body>
+</html>

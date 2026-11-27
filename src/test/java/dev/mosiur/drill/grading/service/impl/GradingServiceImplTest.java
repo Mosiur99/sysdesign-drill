@@ -40,7 +40,7 @@ class GradingServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new GradingServiceImpl(null, null, null, llm, new GradingPrompt(json), new GradeValidator(), null,
-                null, Clock.systemUTC());
+                null, Clock.systemUTC(), null);
     }
 
     @Test

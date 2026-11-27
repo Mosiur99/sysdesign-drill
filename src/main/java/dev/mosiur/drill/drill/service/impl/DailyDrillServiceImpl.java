@@ -9,6 +9,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import dev.mosiur.drill.drill.model.Attempt;
+import dev.mosiur.drill.drill.model.DayStarted;
 import dev.mosiur.drill.drill.model.Candidate;
 import dev.mosiur.drill.drill.model.TodayDrill;
 import dev.mosiur.drill.drill.repository.DrillRepository;
@@ -18,6 +19,7 @@ import dev.mosiur.drill.problem.domain.Problem;
 import dev.mosiur.drill.problem.repository.ProblemRepository;
 import dev.mosiur.drill.progress.domain.ProblemProgress;
 import dev.mosiur.drill.progress.repository.ProblemProgressRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,9 +31,12 @@ public class DailyDrillServiceImpl implements DailyDrillService {
     private final ProblemProgressRepository progress;
     private final DailyPicker picker;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
     public DailyDrillServiceImpl(DrillRepository drills, ProblemRepository problems,
-                                 ProblemProgressRepository progress, DailyPicker picker, Clock clock) {
+                                 ProblemProgressRepository progress, DailyPicker picker, Clock clock,
+                                 ApplicationEventPublisher events) {
+        this.events = events;
         this.drills = drills;
         this.problems = problems;
         this.progress = progress;
@@ -43,6 +48,7 @@ public class DailyDrillServiceImpl implements DailyDrillService {
     @Transactional
     public Optional<TodayDrill> assignToday() {
         LocalDate today = LocalDate.now(clock);
+        events.publishEvent(new DayStarted(today));
         if (drills.findByScheduledFor(today).isEmpty()) {
             picker.pick(candidates(), today).ifPresent(pick ->
                     drills.insertIfAbsent(pick.problemId(), today, pick.kind().name()));

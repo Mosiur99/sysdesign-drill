@@ -26,6 +26,10 @@
                 <p th:if="${result.score.bonus != null}" class="meta score-breakdown"
                    th:text="${result.score.main} + ' for the answer + ' + ${result.score.bonus} + ' from follow-ups'">
                     62 for the answer + 6 from follow-ups</p>
+                <p th:if="${result.retired}" class="retry-note">You scored 75 or more on this problem twice, so it
+                    is retired.</p>
+                <p th:if="${result.retryOn != null}" class="retry-note">Retry scheduled for <strong
+                        th:text="${#temporals.format(result.retryOn, 'EEE d MMM', #locale.ENGLISH)}">Mon 7 Dec</strong>.</p>
             </div>
         </div>
     </section>
