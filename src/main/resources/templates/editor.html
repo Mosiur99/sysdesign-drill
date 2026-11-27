@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${editor.title})}"></head>
+<body class="editor-page">
+<header class="editor-bar">
+    <div class="editor-bar-inner">
+        <a class="back" th:href="@{/}" aria-label="Back to Today"><span aria-hidden="true">←</span><span class="back-text"> Today</span></a>
+        <span class="editor-title" th:text="${editor.title}">Design a notification service</span>
+        <span class="save-state" data-save-state role="status">All changes saved</span>
+        <span class="timer" data-timer th:attr="data-started-at=${editor.startedAtMillis()}">00:00<span class="timer-target"> / 45:00</span></span>
+        <button type="submit" form="answer-form" class="button submit-desktop" data-submit>Submit for grading</button>
+    </div>
+</header>
+
+<form id="answer-form" class="editor" method="post"
+      th:action="@{/drills/{id}/submit(id=${editor.drillId})}"
+      th:attr="hx-put=@{/drills/{id}/answer(id=${editor.drillId})}"
+      hx-trigger="input delay:3s, focusout" hx-swap="none">
+
+    <nav class="section-rail" aria-label="Sections">
+        <a th:each="section : ${editor.sections}" th:href="'#section-' + ${section.key}"
+           th:attr="data-rail-for=${section.key}">
+            <span th:text="${section.number} + ' ' + ${section.title}">1 Requirements</span>
+            <span class="rail-count" th:attr="data-count-for=${section.key}"
+                  th:text="${section.words} > 0 ? ${section.words} + ' w' : 'empty'">empty</span>
+        </a>
+    </nav>
+
+    <div class="editor-main">
+        <details class="problem-box" open>
+            <summary>Problem</summary>
+            <p th:text="${editor.prompt}">Prompt</p>
+        </details>
+
+        <div class="pager">
+            <button type="button" class="pager-button" data-prev aria-label="Previous section">‹</button>
+            <label class="visually-hidden" for="section-select">Section</label>
+            <select id="section-select" data-section-select>
+                <option th:each="section : ${editor.sections}" th:value="${section.key}"
+                        th:text="${section.number} + ' of 8 · ' + ${section.title}">1 of 8 · Requirements</option>
+            </select>
+            <button type="button" class="pager-button" data-next aria-label="Next section">›</button>
+        </div>
+
+        <section th:each="section, state : ${editor.sections}" class="answer-section"
+                 th:id="'section-' + ${section.key}" th:classappend="${state.first} ? 'current'"
+                 th:attr="data-section=${section.key}">
+            <label th:for="'answer-' + ${section.key}" class="section-label"
+                   th:text="${section.number} + ' ' + ${section.title}">1 Requirements</label>
+            <p class="meta" th:id="'hint-' + ${section.key}" th:text="${section.hint}">Hint</p>
+            <div th:class="${section.diagram} ? 'diagram-pair' : null">
+                <textarea th:id="'answer-' + ${section.key}" th:name="${section.key}" th:rows="${section.rows}"
+                          th:classappend="${section.code} ? 'code'" maxlength="20000" spellcheck="true"
+                          th:attr="aria-describedby='hint-' + ${section.key},data-diagram-source=${section.diagram} ? 'true'"
+                          th:text="${section.text}"></textarea>
+                <figure th:if="${section.diagram}" class="diagram-preview" data-diagram-preview
+                        aria-label="Diagram preview">
+                    <p class="meta">The preview appears when you write a Mermaid flowchart.</p>
+                </figure>
+            </div>
+        </section>
+
+        <div class="confirm" data-confirm hidden role="alertdialog" aria-labelledby="confirm-title"
+             aria-describedby="confirm-text">
+            <h2 id="confirm-title">Submit for grading?</h2>
+            <p id="confirm-text" data-confirm-text></p>
+            <div class="confirm-actions">
+                <button type="button" class="button" data-confirm-yes>Submit anyway</button>
+                <button type="button" class="button-secondary" data-confirm-no>Keep writing</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<footer class="editor-footer">
+    <span class="meta" data-written th:text="${editor.writtenCount()} + ' of 8 written'">0 of 8 written</span>
+    <button type="submit" form="answer-form" class="button" data-submit>Submit</button>
+</footer>
+
+<script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
+<script th:src="@{/webjars/mermaid/dist/mermaid.min.js}"></script>
+<script th:src="@{/js/editor.js}"></script>
+</body>
+</html>

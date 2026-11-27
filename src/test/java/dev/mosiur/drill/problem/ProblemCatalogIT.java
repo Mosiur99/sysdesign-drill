@@ -17,13 +17,12 @@ import dev.mosiur.drill.problem.model.ProblemDefinition;
 import dev.mosiur.drill.problem.repository.ProblemRepository;
 import dev.mosiur.drill.problem.service.ProblemCatalogService;
 import dev.mosiur.drill.problem.service.ProblemFileReader;
-import org.junit.jupiter.api.BeforeEach;
+import dev.mosiur.drill.support.WebSession;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.web.servlet.client.RestTestClient;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -42,13 +41,6 @@ class ProblemCatalogIT {
     @Autowired
     private ProblemRepository problems;
 
-    private RestTestClient client;
-
-    @BeforeEach
-    void setUp() {
-        client = RestTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
-    }
-
     @Test
     void loadsTheShippedBankOnStartUp() {
         int shipped = reader.readAll().size();
@@ -58,8 +50,7 @@ class ProblemCatalogIT {
 
     @Test
     void listsProblemsByDifficultyThenTitleWithoutKeyPoints() {
-        client.get().uri("/api/problems")
-                .exchange()
+        WebSession.signedIn(port).get("/api/problems")
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$[0].difficulty").isEqualTo(1)

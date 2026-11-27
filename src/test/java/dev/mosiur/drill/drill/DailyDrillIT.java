@@ -19,6 +19,7 @@ import dev.mosiur.drill.drill.model.TodayDrill;
 import dev.mosiur.drill.drill.service.DailyDrillService;
 import dev.mosiur.drill.problem.domain.Problem;
 import dev.mosiur.drill.problem.repository.ProblemRepository;
+import dev.mosiur.drill.support.WebSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +27,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.web.servlet.client.RestTestClient;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(PostgresTestConfiguration.class)
@@ -47,13 +47,11 @@ class DailyDrillIT {
     @Autowired
     private Clock clock;
 
-    private RestTestClient client;
-
     @BeforeEach
     void setUp() {
+        jdbc.update("delete from answer");
         jdbc.update("delete from drill");
         jdbc.update("delete from problem_progress");
-        client = RestTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
     }
 
     @Test
@@ -110,12 +108,7 @@ class DailyDrillIT {
 
     @Test
     void todayPageShowsTheAssignedProblem() {
-        String html = client.get().uri("/")
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(String.class)
-                .returnResult()
-                .getResponseBody();
+        String html = WebSession.signedIn(port).page("/");
 
         TodayDrill drill = dailyDrills.assignToday().orElseThrow();
         assertThat(html)
@@ -127,12 +120,7 @@ class DailyDrillIT {
 
     @Test
     void problemsPageListsTheActiveBank() {
-        String html = client.get().uri("/problems")
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(String.class)
-                .returnResult()
-                .getResponseBody();
+        String html = WebSession.signedIn(port).page("/problems");
 
         int active = problems.findByActiveTrue().size();
         assertThat(html).contains(active + " problems, easiest first").contains("Design a URL shortener");

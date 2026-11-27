@@ -52,6 +52,33 @@ public class Drill {
     protected Drill() {
     }
 
+    public Drill(Problem problem, LocalDate scheduledFor, DrillKind kind) {
+        this.problem = problem;
+        this.scheduledFor = scheduledFor;
+        this.kind = kind;
+        this.status = DrillStatus.ASSIGNED;
+    }
+
+    public void start(Instant now) {
+        if (status == DrillStatus.ASSIGNED) {
+            status = DrillStatus.IN_PROGRESS;
+            startedAt = now;
+        }
+    }
+
+    public void submit(Instant now) {
+        if (!isEditable()) {
+            throw new IllegalStateException("drill " + id + " is " + status + " and cannot be submitted");
+        }
+        start(now);
+        status = DrillStatus.GRADING;
+        submittedAt = now;
+    }
+
+    public boolean isEditable() {
+        return status == DrillStatus.ASSIGNED || status == DrillStatus.IN_PROGRESS;
+    }
+
     public Long getId() {
         return id;
     }
@@ -70,5 +97,13 @@ public class Drill {
 
     public DrillStatus getStatus() {
         return status;
+    }
+
+    public Instant getStartedAt() {
+        return startedAt;
+    }
+
+    public Instant getSubmittedAt() {
+        return submittedAt;
     }
 }

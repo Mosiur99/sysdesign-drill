@@ -18,9 +18,19 @@
         <p th:if="${drill.kind.name() == 'RETRY'}" class="note">
             Your earlier answer and score stay hidden until you submit, so you answer fresh.
         </p>
-        <div class="actions">
-            <a class="button" th:href="@{/drills/{id}(id=${drill.id})}">Start answer</a>
-            <span class="meta">45-minute timer starts when you open it. Drafts save as you type.</span>
+        <div class="actions" th:switch="${drill.status.name()}">
+            <th:block th:case="'ASSIGNED'">
+                <a class="button" th:href="@{/drills/{id}(id=${drill.id})}">Start answer</a>
+                <span class="meta">45-minute timer starts when you open it. Drafts save as you type.</span>
+            </th:block>
+            <th:block th:case="'IN_PROGRESS'">
+                <a class="button" th:href="@{/drills/{id}(id=${drill.id})}">Continue answer</a>
+                <span class="meta">Your draft is saved. The timer kept running.</span>
+            </th:block>
+            <th:block th:case="*">
+                <a class="button-secondary" th:href="@{/drills/{id}/result(id=${drill.id})}">See result</a>
+                <span class="meta">Submitted. Tomorrow's problem arrives at 08:00.</span>
+            </th:block>
         </div>
     </section>
 

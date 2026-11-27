@@ -1,0 +1,4 @@
+drill:
+  auth:
+    username: tester
+    password-hash: "$2a$04$icbS/0OrjyeBeiqO7NAl9umasgLMwT6tl54mF631/3sMXHyfD2Ihu"

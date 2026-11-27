@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Something went wrong')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('')}"></header>
+<main class="page">
+    <section class="today" th:switch="${status}">
+        <p class="meta" th:text="'Error ' + ${status}">Error 500</p>
+        <th:block th:case="404">
+            <h1>Page not found</h1>
+            <p class="prompt">That page doesn't exist. It may have been a link to an old drill.</p>
+        </th:block>
+        <th:block th:case="409">
+            <h1>Already submitted</h1>
+            <p class="prompt">This answer was submitted before, so it can't change now.</p>
+        </th:block>
+        <th:block th:case="400">
+            <h1>That request didn't work</h1>
+            <p class="prompt">Something in the request was not valid. Each section holds up to 20,000 characters.</p>
+        </th:block>
+        <th:block th:case="*">
+            <h1>Something went wrong</h1>
+            <p class="prompt">The error is logged. Your saved work is safe; try again in a moment.</p>
+        </th:block>
+        <a th:href="@{/}">Back to Today</a>
+    </section>
+</main>
+</body>
+</html>

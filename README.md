@@ -6,15 +6,20 @@ Work in progress. Built step by step.
 
 ## Stack
 
-Java 25, Spring Boot 4, PostgreSQL 17, Flyway, Testcontainers.
+Java 25, Spring Boot 4, PostgreSQL 17, Flyway, Spring Security, Thymeleaf, htmx, Mermaid, Testcontainers, Playwright.
 
 ## Run locally
 
+The app has one user. Set the username and a BCrypt hash of the password:
+
 ```bash
+export DRILL_USER=you
+export DRILL_PASSWORD_HASH="$(htpasswd -bnBC 12 '' 'your-password' | tr -d ':\n')"
 docker compose up -d
 ./mvnw spring-boot:run
-curl localhost:8080/actuator/health
 ```
+
+Open http://localhost:8080 and sign in. Set `DRILL_SECURE_COOKIE=true` when the app is served over HTTPS.
 
 ## Test
 
@@ -22,4 +27,4 @@ curl localhost:8080/actuator/health
 ./mvnw verify
 ```
 
-Unit tests run with Surefire. Integration tests (`*IT`) run with Failsafe against a real PostgreSQL container, so Docker must be running.
+Unit tests run with Surefire. Integration tests (`*IT`) run with Failsafe against a real PostgreSQL container, so Docker must be running. `EditorUiIT` drives the editor in headless Chromium with Playwright, which downloads the browser on its first run.

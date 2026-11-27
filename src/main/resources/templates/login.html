@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Sign in')}"></head>
+<body>
+<main class="login">
+    <div class="stack-tight">
+        <p class="brand">sysdesign drill</p>
+        <h1>Sign in</h1>
+    </div>
+    <p th:if="${locked}" class="alert" role="alert">Too many wrong tries. Wait a minute, then try again.</p>
+    <p th:if="${failed}" class="alert" role="alert"
+       th:text="${triesLeft != null} ? 'Username or password is wrong. ' + ${triesLeft} + (${triesLeft == 1} ? ' try' : ' tries') + ' left this minute.' : 'Username or password is wrong.'">
+        Username or password is wrong.
+    </p>
+    <p th:if="${signedOut}" class="notice" role="status">You are signed out.</p>
+    <form class="login-form" th:action="@{/login}" method="post">
+        <div class="field">
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" autocomplete="username" required autofocus
+                   th:attr="aria-invalid=${failed} ? 'true'">
+        </div>
+        <div class="field">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required
+                   th:attr="aria-invalid=${failed} ? 'true'">
+        </div>
+        <label class="check" for="remember-me">
+            <input id="remember-me" name="remember-me" type="checkbox" checked>
+            Keep me signed in for 30 days
+        </label>
+        <button type="submit" class="button">Sign in</button>
+    </form>
+</main>
+</body>
+</html>

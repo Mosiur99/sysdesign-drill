@@ -18,6 +18,17 @@ drill:
     location: classpath:problems/*.yaml
   pick:
     cron: ${DRILL_PICK_CRON:0 0 8 * * *}
+  auth:
+    username: ${DRILL_USER:}
+    password-hash: ${DRILL_PASSWORD_HASH:}
+
+server:
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        same-site: lax
+        secure: ${DRILL_SECURE_COOKIE:false}
 
 management:
   endpoints:
@@ -26,4 +37,4 @@ management:
         include: health
   endpoint:
     health:
-      show-details: always
+      show-details: when-authorized

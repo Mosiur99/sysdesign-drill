@@ -4,7 +4,9 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 import dev.mosiur.drill.drill.domain.Drill;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,6 +14,10 @@ import org.springframework.data.repository.query.Param;
 public interface DrillRepository extends JpaRepository<Drill, Long> {
 
     Optional<Drill> findByScheduledFor(LocalDate scheduledFor);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select d from Drill d where d.id = :id")
+    Optional<Drill> findByIdForUpdate(@Param("id") long id);
 
     @Modifying
     @Query(value = """

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Clock;
 import java.time.ZoneId;
 
+import dev.mosiur.drill.support.WebSession;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,12 +36,20 @@ class DrillApplicationIT {
     }
 
     @Test
-    void reportsHealthyWhenTheDatabaseIsReachable() {
+    void reportsHealthWithoutDetailsToAnonymousCallers() {
         client.get().uri("/actuator/health")
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.status").isEqualTo("UP")
+                .jsonPath("$.components").doesNotExist();
+    }
+
+    @Test
+    void showsDatabaseHealthOnceSignedIn() {
+        WebSession.signedIn(port).get("/actuator/health")
+                .expectStatus().isOk()
+                .expectBody()
                 .jsonPath("$.components.db.status").isEqualTo("UP");
     }
 

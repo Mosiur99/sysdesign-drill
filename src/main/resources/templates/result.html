@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${submission.title})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('today')}"></header>
+<main class="page">
+    <section class="today" th:switch="${submission.status.name()}">
+        <th:block th:case="'GRADING'">
+            <p class="meta">
+                <span th:text="${submission.wordCount} + ' words'">812 words</span><th:block
+                    th:if="${submission.minutesSpent() != null}"> · <span
+                    th:text="${submission.minutesSpent()} + ' min'">47 min</span></th:block>
+            </p>
+            <h1 th:text="${submission.title}">Design a notification service</h1>
+            <p class="prompt">Your answer is submitted and saved. It is waiting to be graded, and the
+                scores will appear on this page.</p>
+            <div class="skeleton" aria-hidden="true"><span></span><span></span><span></span></div>
+        </th:block>
+        <th:block th:case="*">
+            <h1 th:text="${submission.title}">Design a notification service</h1>
+            <p class="prompt">This answer is not submitted yet.</p>
+            <a class="button" th:href="@{/drills/{id}(id=${submission.drillId})}">Continue answer</a>
+        </th:block>
+    </section>
+</main>
+</body>
+</html>
